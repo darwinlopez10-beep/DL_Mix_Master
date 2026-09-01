@@ -2,96 +2,59 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master - TV Player</title>
+  <title>DL Mix-Master - Salida TV Video</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: sans-serif; }
+    body, html { width: 100%; height: 100%; background: #000; overflow: hidden; cursor: pointer; }
     
-    #standby {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #00e676;
-      text-align: center;
-      background: radial-gradient(circle, #1a2332 0%, #0d0f12 100%);
-      padding: 20px;
+    .video-container { position: relative; width: 100vw; height: 100vh; }
+    
+    .screen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border: none; transition: opacity 0.1s ease-out;
     }
-    #standby h1 { font-size: 48px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
-    #standby p { font-size: 20px; color: #8a94a6; }
-
-    #player-container { width: 100vw; height: 100vh; display: none; background: #000; }
-    #player { width: 100%; height: 100%; pointer-events: none; }
+    #screen-a { z-index: 1; opacity: 1; }
+    #screen-b { z-index: 2; opacity: 0; }
   </style>
 </head>
-<body>
+<body onclick="toggleFullscreen()">
 
-  <div id="standby">
-    <h1>DL MIX-MASTER</h1>
-    <p>Conectado. Busca una canción desde tu teléfono para iniciar la rumba.</p>
-  </div>
-
-  <div id="player-container">
-    <div id="player"></div>
+  <div class="video-container">
+    <div id="screen-a" class="screen"></div>
+    <div id="screen-b" class="screen"></div>
   </div>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    let player;
-    let ws;
+    let playerA, playerB;
+    let ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        playerVars: {
-          'autoplay': 1,
-          'controls': 0,
-          'showinfo': 0,
-          'rel': 0,
-          'modestbranding': 1,
-          'iv_load_policy': 3,
-          'disablekb': 1,
-          'fs': 0,
-          'cc_load_policy': 0
-        },
-        events: {
-          'onReady': onPlayerReady
-        }
-      });
+      playerA = new YT.Player('screen-a', { height: '100%', width: '100%', playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1 } });
+      playerB = new YT.Player('screen-b', { height: '100%', width: '100%', playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1 } });
     }
 
-    function onPlayerReady(event) {
-      connectWS();
-    }
-
-    function connectWS() {
-      ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
-
-      ws.onmessage = (event) => {
+    ws.onmessage = (event) => {
+      try {
         const data = JSON.parse(event.data);
-
         if (data.type === 'yt_play') {
-          document.getElementById('standby').style.display = 'none';
-          document.getElementById('player-container').style.display = 'block';
-          player.loadVideoById(data.videoId);
-          player.playVideo();
+          if (data.deck === 'A' && playerA && playerA.loadVideoById) playerA.loadVideoById(data.videoId);
+          if (data.deck === 'B' && playerB && playerB.loadVideoById) playerB.loadVideoById(data.videoId);
         }
-
-        if (data.type === 'yt_control') {
-          if (data.action === 'play') player.playVideo();
-          if (data.action === 'pause') player.pauseVideo();
-          if (data.action === 'stop') {
-            player.stopVideo();
-            document.getElementById('player-container').style.display = 'none';
-            document.getElementById('standby').style.display = 'flex';
-          }
+        if (data.type === 'crossfade_video') {
+          // Ajusta la transparencia (opacity) del video B para mezclar los videos suavemente
+          const opacityB = data.value / 100;
+          document.getElementById('screen-b').style.opacity = opacityB;
         }
-      };
+      } catch(e) {}
+    };
 
-      ws.onclose = () => setTimeout(connectWS, 2000);
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
     }
   </script>
 </body>
