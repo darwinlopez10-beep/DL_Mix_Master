@@ -69,60 +69,36 @@
     }
     connectWS();
 
-    async function fetchWithTimeout(url, timeoutMs = 3500) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        if (!response.ok) return null;
-        return await response.json();
-      } catch (e) {
-        clearTimeout(id);
-        return null;
-      }
-    }
-
     async function searchMusic() {
       const q = document.getElementById('query').value.trim();
       if (!q) return;
       const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '<div style="text-align:center; color:#38bdf8; padding:20px;">Buscando en red multiservidor...</div>';
+      resultsDiv.innerHTML = '<div style="text-align:center; color:#38bdf8; padding:20px;">Buscando en servidor...</div>';
 
-      const endpoints = [
-        `https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
-        `https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
-        `https://vid.puffyan.us/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
-        `https://invidious.drgns.space/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`
-      ];
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const items = await res.json();
 
-      let items = null;
-      for (const endpoint of endpoints) {
-        items = await fetchWithTimeout(endpoint);
-        if (items && Array.isArray(items) && items.length > 0) break;
-      }
+        resultsDiv.innerHTML = '';
+        if (!items || items.length === 0) {
+          resultsDiv.innerHTML = '<div style="text-align:center; color:#ef4444; padding:15px;">No se encontraron resultados.</div>';
+          return;
+        }
 
-      resultsDiv.innerHTML = '';
-
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        resultsDiv.innerHTML = '<div style="text-align:center; color:#ef4444; padding:15px;">No se pudo conectar a los servidores. Intenta nuevamente.</div>';
-        return;
-      }
-
-      items.slice(0, 10).forEach(item => {
-        const videoId = item.videoId || (item.url ? item.url.split('v=')[1] : null);
-        if (videoId && item.title) {
+        items.forEach(item => {
           const cleanTitle = item.title.replace(/'/g, "").replace(/"/g, "");
           const div = document.createElement('div');
           div.className = 'result-item';
           div.innerHTML = `
-            <img class="result-img" src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" onerror="this.src='https://via.placeholder.com/50x38/1f242d/ffffff?text=Video'">
+            <img class="result-img" src="${item.thumbnail}">
             <div class="result-info">${item.title}</div>
-            <button class="btn-add" onclick="playVideo('${videoId}', '${cleanTitle}')">▶ TV</button>
+            <button class="btn-add" onclick="playVideo('${item.videoId}', '${cleanTitle}')">▶ TV</button>
           `;
           resultsDiv.appendChild(div);
-        }
-      });
+        });
+      } catch (e) {
+        resultsDiv.innerHTML = '<div style="text-align:center; color:#ef4444; padding:15px;">Error al conectar con el servidor.</div>';
+      }
     }
 
     function playVideo(id, title) {
