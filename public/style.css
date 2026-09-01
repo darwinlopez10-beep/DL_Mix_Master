@@ -1,0 +1,11 @@
+:root {
+    --bg-main: #f8fafc;
+    --card-bg: #ffffff;
+    --primary-blue: #0284c7;
+    --neon-green: #10b981;
+    --text-dark: #0f172a;
+}
+body { background: var(--bg-main); font-family: sans-serif; padding: 20px; }
+.main-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; border-radius: 10px; }
+.main-header h1 span { color: var(--neon-green); }
+.line-active { font-size: 40px; color: var(--primary-blue); font-weight: bold; }
