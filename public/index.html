@@ -20,7 +20,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
     body { background-color: var(--bg-main); color: var(--text-bright); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Barra Superior Profesional */
     header {
       background: #080a0e;
       padding: 6px 14px;
@@ -39,7 +38,6 @@
     .btn-action:hover { background: #2f3b56; }
     .btn-action.tv { background: var(--orange-accent); color: #000; border: none; }
 
-    /* Layout Principal de la Consola */
     .console-container {
       display: grid;
       grid-template-columns: 1fr 340px 1fr;
@@ -50,7 +48,6 @@
       height: calc(100vh - 42px);
     }
 
-    /* Módulos Decks A & B */
     .deck-panel {
       background: var(--panel-bg); border-radius: 6px; padding: 8px;
       display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
@@ -65,16 +62,13 @@
     .deck-tag.b { color: var(--cyan-accent); }
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-    /* Módulo FX Superior */
     .fx-bar { display: flex; gap: 4px; background: #0b0e14; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); }
     .fx-btn { flex: 1; padding: 3px; background: #1c2333; border: 1px solid #2f3b56; color: var(--text-sub); font-size: 9px; font-weight: 800; border-radius: 2px; text-align: center; }
     .fx-btn.active { background: var(--orange-accent); color: #000; }
 
-    /* Visor de Video */
     .video-viewport { width: 100%; height: 145px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div { width: 100%; height: 100%; }
 
-    /* Performance Pads (Hot Cues, Loops) */
     .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
     .pad-btn {
       background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0;
@@ -82,7 +76,6 @@
     }
     .pad-btn:hover { background: #2c364e; }
 
-    /* Botones Transport (PLAY, CUE, SYNC) */
     .transport-row { display: flex; gap: 4px; }
     .t-btn {
       flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center;
@@ -91,13 +84,11 @@
     .t-btn.cue { background: var(--orange-accent); color: #000; }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
-    /* Mezclador Central */
     .mixer-panel {
       background: var(--panel-bg); border-radius: 6px; padding: 8px;
       display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
 
-    /* Vómetros LED Centrales */
     .vu-meters-container {
       display: flex; justify-content: space-around; background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);
     }
@@ -105,12 +96,10 @@
     .vu-meter-strip { width: 8px; height: 75px; background: #121620; border-radius: 2px; display: flex; flex-direction: column-reverse; padding: 1px; border: 1px solid #222b3d; }
     .vu-meter-bar { width: 100%; height: 70%; background: linear-gradient(to top, #00e676 60%, #ffea00 85%, #ff1744 100%); border-radius: 1px; }
 
-    /* Perillas Ecualizador */
     .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--card-bg); padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); }
     .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 8px; color: var(--text-sub); font-weight: 700; gap: 2px; }
     .knob-unit input[type=range] { width: 100%; accent-color: var(--orange-accent); cursor: pointer; }
 
-    /* Crossfader Oscuro Limpio sin Franja Amarilla */
     .clean-crossfader-box {
       background: #080a0e; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center;
     }
@@ -122,7 +111,6 @@
       appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff;
     }
 
-    /* Navegador y Lista de Canciones */
     .browser-panel {
       grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; gap: 8px; border: 1px solid var(--border-color);
     }
@@ -139,7 +127,6 @@
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid #141924; font-size: 11px; }
     .song-row:hover { background: #161c28; }
 
-    /* Modal QR */
     #qr-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
@@ -158,7 +145,6 @@
     </div>
   </header>
 
-  <!-- Modal QR -->
   <div id="qr-modal">
     <div class="modal-content">
       <h3 style="color:var(--orange-accent)">CONTROL REMOTO</h3>
@@ -176,7 +162,6 @@
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <!-- FX Superior Deck A -->
       <div class="fx-bar">
         <div class="fx-btn active">FX 1</div>
         <div class="fx-btn">FX 2</div>
@@ -188,7 +173,6 @@
         <div id="player-a"></div>
       </div>
 
-      <!-- Pads de Rendimiento Deck A -->
       <div class="pads-grid">
         <div class="pad-btn">HOT 1</div>
         <div class="pad-btn">HOT 2</div>
@@ -200,7 +184,6 @@
         <div class="pad-btn">JUMP</div>
       </div>
 
-      <!-- Transporte Deck A -->
       <div class="transport-row">
         <button class="t-btn sync">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
@@ -208,7 +191,7 @@
       </div>
     </div>
 
-    <!-- MEZCLADOR CENTRAL MIXXX -->
+    <!-- MEZCLADOR CENTRAL -->
     <div class="mixer-panel">
       <div class="vu-meters-container">
         <div class="vu-channel">
@@ -236,7 +219,6 @@
         <div class="knob-unit"><span>LOW B</span><input type="range" value="50"></div>
       </div>
 
-      <!-- CROSSFADER LIMPION Y SIN FRANJA AMARILLA -->
       <div class="clean-crossfader-box">
         <div class="crossfader-label">CROSSFADER VIDEO & AUDIO</div>
         <input type="range" id="crossfader" min="0" max="100" value="50" oninput="updateCrossfader(this.value)">
@@ -250,7 +232,6 @@
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <!-- FX Superior Deck B -->
       <div class="fx-bar">
         <div class="fx-btn active">FX 1</div>
         <div class="fx-btn">FX 2</div>
@@ -262,7 +243,6 @@
         <div id="player-b"></div>
       </div>
 
-      <!-- Pads de Rendimiento Deck B -->
       <div class="pads-grid">
         <div class="pad-btn">HOT 1</div>
         <div class="pad-btn">HOT 2</div>
@@ -274,7 +254,6 @@
         <div class="pad-btn">JUMP</div>
       </div>
 
-      <!-- Transporte Deck B -->
       <div class="transport-row">
         <button class="t-btn sync">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
@@ -282,7 +261,7 @@
       </div>
     </div>
 
-    <!-- NAVEGADOR DE PISTAS -->
+    <!-- BÚSQUEDA -->
     <div class="browser-panel">
       <div class="tree-sidebar">
         <div class="tree-node active">📁 Pistas</div>
@@ -321,7 +300,7 @@
       const q = document.getElementById('searchInput').value;
       if (!q) return;
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:20px; font-size:11px">🔍 Buscando pistas rápidas...</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:20px; font-size:11px">🔍 Buscando pistas...</div>';
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
@@ -341,7 +320,7 @@
           list.appendChild(row);
         });
       } catch (e) {
-        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:11px">Error al cargar resultados. Intenta de nuevo.</div>';
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:11px">Error al buscar.</div>';
       }
     }
 
@@ -373,7 +352,10 @@
       ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
     }
 
-    function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
+    /* AQUÍ ESTÁ EL CAMBIO CLAVE: Abre directamente la ventana receptora tv.html de la propia app */
+    function openTV() {
+      window.open('/tv.html', 'TVWindow', 'width=1280,height=720,menubar=no,toolbar=no,location=no');
+    }
 
     function toggleQR() {
       const modal = document.getElementById('qr-modal');
