@@ -47,11 +47,9 @@
     .deck-tag.b { color: var(--cyan-accent); }
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-    /* PANTALLAS MÁS GRANDES */
     .video-viewport { width: 100%; height: 210px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; }
 
-    /* BARRA DE MINUTERO / PROGRESO */
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
     }
@@ -69,7 +67,6 @@
     .t-btn.cue { background: var(--orange-accent); color: #000; }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
-    /* MEZCLADOR CENTRAL CON VOLUMEN */
     .mixer-panel {
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
@@ -88,7 +85,6 @@
     .clean-crossfader-box input[type=range] { width: 100%; margin-top: 4px; appearance: none; height: 6px; background: #1a212f; border-radius: 3px; outline: none; border: 1px solid #2f3b56; }
     .clean-crossfader-box input[type=range]::-webkit-slider-thumb { appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff; }
 
-    /* BÚSQUEDA Y LISTA EXTENDIDA HACIA ABAJO */
     .browser-panel {
       grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 10px; display: flex; gap: 10px; border: 1px solid var(--border-color); min-height: 380px;
     }
@@ -104,6 +100,14 @@
     .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
     .song-row:hover { background: #161c28; }
+
+    /* MODAL QR DE VUELTA */
+    #qr-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-content { background: var(--panel-bg); border: 2px solid var(--orange-accent); padding: 20px; border-radius: 8px; text-align: center; }
+    #qr-img { width: 180px; height: 180px; background: white; padding: 4px; border-radius: 4px; margin: 10px auto; }
   </style>
 </head>
 <body>
@@ -111,9 +115,19 @@
   <header>
     <div class="logo">🎛️ DL MIX-MASTER PRO</div>
     <div class="top-actions">
+      <button class="btn-action" onclick="toggleQR()">📱 CONTROL REMOTO QR</button>
       <button class="btn-action tv" onclick="openTV()">📺 PANTALLA TV (HDMI)</button>
     </div>
   </header>
+
+  <div id="qr-modal">
+    <div class="modal-content">
+      <h3 style="color:var(--orange-accent)">CONTROL REMOTO</h3>
+      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código con tu celular o tablet para comandar la consola:</p>
+      <img id="qr-img" src="" alt="Cargando QR...">
+      <button class="btn-action" style="width:100%; justify-content:center; margin-top:10px" onclick="toggleQR()">CERRAR</button>
+    </div>
+  </div>
 
   <div class="console-container">
     <div class="deck-panel">
@@ -227,27 +241,23 @@
     let playerA, playerB;
     let volAVal = 100, volBVal = 100;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
+    let currentSongsList = [];
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
-        events: { 'onStateChange': () => updateTimer('A') }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
-        events: { 'onStateChange': () => updateTimer('B') }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
       });
 
-      // Bucle de sincronización de tiempo
       setInterval(syncTimelines, 1000);
     }
 
-    /* BÚSQUEDA */
     async function doSearch() {
-      document.getElementById('searchBarGroup').style.display = 'flex';
       const q = document.getElementById('searchInput').value;
       if (!q) return;
       const list = document.getElementById('resultsList');
@@ -255,38 +265,54 @@
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        list.innerHTML = '';
-
-        data.forEach(song => {
-          const row = document.createElement('div');
-          row.className = 'song-row';
-          const cleanTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          row.innerHTML = `
-            <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration})</span></span>
-            <div style="display:flex; gap:6px">
-              <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('A', '${song.videoId}', '${cleanTitle}')">+ DECK A</button>
-              <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('B', '${song.videoId}', '${cleanTitle}')">+ DECK B</button>
-            </div>
-          `;
-          list.appendChild(row);
-        });
+        currentSongsList = await res.json();
+        renderResultsList();
       } catch (e) {
         list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:30px; font-size:12px">Error al buscar canciones. Reintenta.</div>';
       }
     }
 
-    /* CARGAR Y GUARDAR EN HISTORIAL */
-    function loadVideo(deck, videoId, title) {
+    function renderResultsList() {
+      const list = document.getElementById('resultsList');
+      list.innerHTML = '';
+      currentSongsList.forEach((song, idx) => {
+        const row = document.createElement('div');
+        row.className = 'song-row';
+        row.innerHTML = `
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration})</span></span>
+          <div style="display:flex; gap:6px">
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('A', ${idx})">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('B', ${idx})">+ DECK B</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function selectSong(deck, index) {
+      const song = currentSongsList[index];
+      if (!song) return;
+      loadVideoDirect(deck, song.videoId, song.title);
+    }
+
+    /* CARGA DIRECTA Y SEGURA DE VIDEO EN YOUTUBE */
+    function loadVideoDirect(deck, videoId, title) {
       if (deck === 'A') {
-        if (playerA && playerA.loadVideoById) playerA.loadVideoById(videoId);
+        if (playerA && typeof playerA.loadVideoById === 'function') {
+          playerA.loadVideoById(videoId);
+        } else {
+          document.getElementById('player-a').innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%"></iframe>`;
+        }
         document.getElementById('title-a').innerText = title;
       } else {
-        if (playerB && playerB.loadVideoById) playerB.loadVideoById(videoId);
+        if (playerB && typeof playerB.loadVideoById === 'function') {
+          playerB.loadVideoById(videoId);
+        } else {
+          document.getElementById('player-b').innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%"></iframe>`;
+        }
         document.getElementById('title-b').innerText = title;
       }
 
-      // Guardar en el Historial de la PC
       saveToHistory(title, videoId);
 
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -297,7 +323,7 @@
     function saveToHistory(title, videoId) {
       const item = { title, videoId, date: new Date().toLocaleTimeString() };
       songHistory.unshift(item);
-      if (songHistory.length > 30) songHistory.pop(); // Guardar hasta 30 canciones
+      if (songHistory.length > 30) songHistory.pop();
       localStorage.setItem('dl_history', JSON.stringify(songHistory));
     }
 
@@ -309,22 +335,20 @@
       }
 
       list.innerHTML = '';
-      songHistory.forEach(song => {
+      songHistory.forEach((song) => {
         const row = document.createElement('div');
         row.className = 'song-row';
-        const cleanTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         row.innerHTML = `
           <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
           <div style="display:flex; gap:6px">
-            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('A', '${song.videoId}', '${cleanTitle}')">+ DECK A</button>
-            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('B', '${song.videoId}', '${cleanTitle}')">+ DECK B</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
           </div>
         `;
         list.appendChild(row);
       });
     }
 
-    /* CONTROL DE MINUTERO / ADELANTAR Y ATRASAR */
     function syncTimelines() {
       if (playerA && playerA.getDuration) {
         const cur = playerA.getCurrentTime() || 0;
@@ -369,19 +393,28 @@
     }
 
     function setChannelVolume(deck, val) {
-      if (deck === 'A') { volAVal = val; if (playerA) playerA.setVolume(val); }
-      else { volBVal = val; if (playerB) playerB.setVolume(val); }
+      if (deck === 'A') { volAVal = val; if (playerA && playerA.setVolume) playerA.setVolume(val); }
+      else { volBVal = val; if (playerB && playerB.setVolume) playerB.setVolume(val); }
     }
 
     function updateCrossfader(val) {
       const factorA = (100 - val) / 50;
       const factorB = val / 50;
-      if (playerA) playerA.setVolume(Math.min(100, volAVal * factorA));
-      if (playerB) playerB.setVolume(Math.min(100, volBVal * factorB));
+      if (playerA && playerA.setVolume) playerA.setVolume(Math.min(100, volAVal * factorA));
+      if (playerB && playerB.setVolume) playerB.setVolume(Math.min(100, volBVal * factorB));
       if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
     }
 
     function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
+
+    /* MOSTRAR / OCULTAR CÓDIGO QR */
+    function toggleQR() {
+      const modal = document.getElementById('qr-modal');
+      const img = document.getElementById('qr-img');
+      const fullUrl = window.location.protocol + '//' + window.location.host;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullUrl)}`;
+      modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
   </script>
 </body>
 </html>
