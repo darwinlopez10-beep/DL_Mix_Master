@@ -2,161 +2,105 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master DJ Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DL Mix-Master Mobile</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-    body { background-color: #12151a; color: #c3c7d1; font-size: 12px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #121212; color: #ffffff; padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
     
-    /* Header Bar */
-    header { background: #1c2029; border-bottom: 1px solid #2d3342; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
-    .brand { font-weight: bold; color: #00e676; font-size: 14px; letter-spacing: 1px; }
-    .top-controls button { background: #2a303d; color: #fff; border: 1px solid #404b5c; padding: 4px 10px; cursor: pointer; border-radius: 3px; font-weight: bold; }
-    .top-controls button:hover { background: #00e676; color: #000; }
+    header { text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #27272a; }
+    h1 { color: #22c55e; font-size: 22px; letter-spacing: 1px; }
+    p.subtitle { color: #a1a1aa; font-size: 12px; margin-top: 4px; }
 
-    /* Main DJ Console Layout */
-    .console-container { display: flex; flex: 1; padding: 8px; gap: 8px; background: #0b0d10; min-height: 320px; }
-    
-    /* Decks */
-    .deck { flex: 1; background: #171a21; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-    .deck-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a313d; padding-bottom: 6px; }
-    .deck-title { font-weight: bold; font-size: 14px; color: #00b0ff; }
-    .deck-b .deck-title { color: #ff3d00; }
-    
-    .jog-wheel { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #2c3240 0%, #111317 70%); border: 4px solid #3a4454; margin: 10px auto; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px #000; }
-    .jog-inner { width: 30px; height: 30px; border-radius: 50%; background: #00e676; }
-    .deck-b .jog-inner { background: #ff3d00; }
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .card-title { font-size: 14px; font-weight: bold; color: #38bdf8; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
 
-    .deck-controls { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
-    .btn { background: #252b36; border: 1px solid #3d4657; color: #fff; padding: 6px 12px; font-weight: bold; border-radius: 3px; cursor: pointer; }
-    .btn-play { background: #00c853; color: #000; }
-    .btn-cue { background: #ffab00; color: #000; }
+    .file-input-wrapper { position: relative; margin-bottom: 12px; }
+    .btn-file { width: 100%; padding: 14px; background: #27272a; border: 2px dashed #52525b; border-radius: 8px; color: #e4e4e7; font-size: 14px; text-align: center; font-weight: 600; cursor: pointer; display: block; }
+    input[type="file"] { display: none; }
 
-    /* Mixer */
-    .mixer { width: 220px; background: #14171d; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-    .eq-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
-    .eq-knob { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
-    .eq-knob input { width: 80px; }
-    .crossfader { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-    .crossfader input { width: 80%; }
+    .track-info { background: #09090b; padding: 10px 12px; border-radius: 6px; font-size: 13px; color: #a1a1aa; word-break: break-all; margin-bottom: 12px; }
+    .track-info strong { color: #fff; }
 
-    /* Library Section */
-    .library-container { flex: 1; background: #12151a; border-top: 2px solid #2a313d; display: flex; }
-    .sidebar { width: 180px; background: #171a21; border-right: 1px solid #2a313d; padding: 8px; }
-    .sidebar-item { padding: 6px 8px; border-radius: 3px; cursor: pointer; margin-bottom: 2px; }
-    .sidebar-item:hover, .sidebar-item.active { background: #00b0ff; color: #fff; }
-    
-    .main-library { flex: 1; display: flex; flex-direction: column; padding: 8px; }
-    .search-bar { margin-bottom: 8px; }
-    .search-bar input { width: 100%; padding: 6px; background: #1c2029; border: 1px solid #2a313d; color: #fff; border-radius: 3px; }
-    
-    .track-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .track-table th { background: #1c2029; padding: 6px; border-bottom: 1px solid #2a313d; color: #8a94a6; }
-    .track-table td { padding: 6px; border-bottom: 1px solid #1c2029; }
-    .track-table tr:hover { background: #252b36; cursor: pointer; }
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn { padding: 14px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer; text-align: center; }
+    .btn-play { background: #22c55e; color: #000; }
+    .btn-pause { background: #eab308; color: #000; }
+    .btn-stop { background: #ef4444; color: #fff; grid-column: span 2; }
+
+    .tv-link-btn { width: 100%; padding: 12px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; margin-top: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="brand">DL MIX-MASTER PRO</div>
-    <div class="top-controls">
-      <button onclick="window.open('/tv.html', '_blank')">Abrir Pantalla TV</button>
-    </div>
+    <h1>DL MIX-MASTER</h1>
+    <p class="subtitle">Control Remoto de Karaoke y Video</p>
   </header>
 
-  <div class="console-container">
-    <!-- DECK A -->
-    <div class="deck deck-a">
-      <div class="deck-header">
-        <span class="deck-title">DECK A</span>
-        <span id="title-a">Ninguna pista cargada</span>
-      </div>
-      <div class="jog-wheel"><div class="jog-inner"></div></div>
-      <input type="file" id="file-a" accept="audio/*,video/*" style="display:none;" onchange="loadTrack('A', this)">
-      <button class="btn" onclick="document.getElementById('file-a').click()">Cargar Pista A</button>
-      <div class="deck-controls">
-        <button class="btn btn-cue">CUE</button>
-        <button class="btn btn-play" onclick="playDeck('A')">PLAY</button>
-      </div>
+  <!-- CONTROL DE REPRODUCCIÓN -->
+  <div class="card">
+    <div class="card-title">
+      <span>REPRODUCTOR PRINCIPAL</span>
+      <span id="status-badge" style="font-size:10px; background:#22c55e; color:#000; padding:2px 6px; border-radius:10px;">EN LÍNEA</span>
     </div>
 
-    <!-- MIXER CENTRAL -->
-    <div class="mixer">
-      <div style="font-weight:bold; color:#8a94a6;">MEZCLADOR</div>
-      <div class="eq-group">
-        <div class="eq-knob"><label>HI</label><input type="range" min="0" max="100" value="50"></div>
-        <div class="eq-knob"><label>MID</label><input type="range" min="0" max="100" value="50"></div>
-        <div class="eq-knob"><label>LOW</label><input type="range" min="0" max="100" value="50"></div>
-      </div>
-      <div class="crossfader">
-        <label style="font-size: 10px; margin-bottom:2px;">CROSSFADER</label>
-        <input type="range" min="0" max="100" value="50">
-      </div>
+    <div class="file-input-wrapper">
+      <label for="video-file" class="btn-file">📁 Seleccionar Video MP4 / Audio</label>
+      <input type="file" id="video-file" accept="video/mp4,video/webm,audio/*" onchange="handleFileSelect(this)">
     </div>
 
-    <!-- DECK B -->
-    <div class="deck deck-b">
-      <div class="deck-header">
-        <span class="deck-title">DECK B</span>
-        <span id="title-b">Ninguna pista cargada</span>
-      </div>
-      <div class="jog-wheel"><div class="jog-inner"></div></div>
-      <input type="file" id="file-b" accept="audio/*,video/*" style="display:none;" onchange="loadTrack('B', this)">
-      <button class="btn" onclick="document.getElementById('file-b').click()">Cargar Pista B</button>
-      <div class="deck-controls">
-        <button class="btn btn-cue">CUE</button>
-        <button class="btn btn-play" onclick="playDeck('B')">PLAY</button>
-      </div>
+    <div class="track-info">
+      Archivo: <strong id="current-filename">Ningún archivo cargado</strong>
+    </div>
+
+    <div class="control-grid">
+      <button class="btn btn-play" onclick="sendControl('play')">▶ REPRODUCIR</button>
+      <button class="btn btn-pause" onclick="sendControl('pause')">⏸ PAUSAR</button>
+      <button class="btn btn-stop" onclick="sendControl('stop')">⏹ DETENER</button>
     </div>
   </div>
 
-  <!-- BIBLIOTECA DE PISTAS -->
-  <div class="library-container">
-    <div class="sidebar">
-      <div class="sidebar-item active">📁 Pistas</div>
-      <div class="sidebar-item">⭐ Listas Karaoke</div>
-      <div class="sidebar-item">💻 Equipo</div>
-      <div class="sidebar-item">🕒 Historial</div>
+  <!-- ENLACE PANTALLA TV -->
+  <div class="card">
+    <div class="card-title">ENLACE PARA EL TELEVISOR</div>
+    <p style="font-size: 12px; color: #a1a1aa; margin-bottom: 10px;">
+      Abre esta dirección en el navegador de la TV donde proyectarás los videos:
+    </p>
+    <div style="background:#09090b; padding:10px; border-radius:6px; font-family:monospace; font-size:12px; color:#38bdf8; text-align:center; word-break:break-all;">
+      https://dl-mix-master.onrender.com/tv.html
     </div>
-    <div class="main-library">
-      <div class="search-bar">
-        <input type="text" placeholder="Buscar artista, canción o karaoke...">
-      </div>
-      <table class="track-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Título</th>
-            <th>Artista</th>
-            <th>Duración</th>
-          </tr>
-        </thead>
-        <tbody id="track-list">
-          <tr>
-            <td>1</td>
-            <td>Selecciona "Cargar Pista" en DECK A o B para reproducir</td>
-            <td>Local</td>
-            <td>--:--</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <button class="tv-link-btn" onclick="window.open('/tv.html', '_blank')">Abrir Pantalla TV aquí (Prueba)</button>
   </div>
 
   <script>
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    let selectedFileUrl = null;
+    let selectedFileName = '';
 
-    function loadTrack(deck, input) {
+    function handleFileSelect(input) {
       if (input.files && input.files[0]) {
-        const fileName = input.files[0].name;
-        document.getElementById(`title-${deck.toLowerCase()}`).innerText = fileName;
+        const file = input.files[0];
+        selectedFileName = file.name;
+        document.getElementById('current-filename').innerText = selectedFileName;
+        
+        // Crear URL local para enviar la transmisión del archivo
+        selectedFileUrl = URL.createObjectURL(file);
       }
     }
 
-    function playDeck(deck) {
-      const title = document.getElementById(`title-${deck.toLowerCase()}`).innerText;
-      ws.send(JSON.stringify({ type: 'play', deck: deck, title: title }));
+    function sendControl(action) {
+      if (!selectedFileUrl && action === 'play') {
+        alert('Por favor selecciona un archivo MP4 o de audio primero.');
+        return;
+      }
+
+      ws.send(JSON.stringify({
+        type: 'media_control',
+        action: action,
+        title: selectedFileName,
+        url: selectedFileUrl
+      }));
     }
   </script>
 </body>
