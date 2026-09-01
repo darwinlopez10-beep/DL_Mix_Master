@@ -20,10 +20,10 @@
       padding: 20px;
     }
     #standby h1 { font-size: 42px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
-    #standby p { font-size: 18px; color: #8a94a6; margin-bottom: 25px; }
+    #standby p { font-size: 18px; color: #8a94a6; margin-bottom: 20px; }
 
     .cast-container {
-      margin-top: 15px;
+      margin-top: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -31,8 +31,8 @@
     }
 
     google-cast-launcher {
-      width: 60px;
-      height: 60px;
+      width: 56px;
+      height: 56px;
       cursor: pointer;
       background-color: #00b0ff;
       border-radius: 50%;
@@ -43,8 +43,6 @@
     .info-text {
       font-size: 14px;
       color: #38bdf8;
-      max-width: 400px;
-      line-height: 1.4;
     }
 
     #player-container { width: 100vw; height: 100vh; display: none; background: #000; }
@@ -58,8 +56,7 @@
     <p>Conectado. Busca una canción desde tu teléfono para iniciar la rumba.</p>
     
     <div class="cast-container">
-      <p class="info-text">Toca el ícono para buscar e iniciar transmisión a tu Android TV / Google TV / Roku:</p>
-      <!-- ÍCONO NATIVO DE BÚSQUEDA DE TELEVISORES EN LA RED -->
+      <p class="info-text">Selecciona tu televisor abajo para vincular:</p>
       <google-cast-launcher></google-cast-launcher>
     </div>
   </div>
@@ -68,20 +65,31 @@
     <div id="player"></div>
   </div>
 
-  <!-- Carga la librería nativa de Google Cast para enviar señal directa a TVs -->
   <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player;
     let ws;
+    let castSession = null;
 
-    // Inicializar el receptor de Google Cast para Smart TVs
     window.__onGCastApiAvailable = function(isAvailable) {
       if (isAvailable) {
         cast.framework.CastContext.getInstance().setOptions({
           receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
           autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
         });
+
+        const context = cast.framework.CastContext.getInstance();
+        context.addEventListener(
+          cast.framework.CastContextEventType.SESSION_STATE_CHANGED,
+          function(event) {
+            if (event.sessionState === cast.framework.SessionState.SESSION_STARTED) {
+              castSession = context.getCurrentSession();
+            } else if (event.sessionState === cast.framework.SessionState.SESSION_ENDED) {
+              castSession = null;
+            }
+          }
+        );
       }
     };
 
@@ -110,6 +118,18 @@
       connectWS();
     }
 
+    function castToTV(videoId) {
+      if (castSession) {
+        // Enviar stream nativo de YouTube al Android TV conectado
+        const mediaInfo = new chrome.cast.media.MediaInfo(
+          `https://www.youtube.com/watch?v=${videoId}`,
+          'video/mp4'
+        );
+        const request = new chrome.cast.media.LoadRequest(mediaInfo);
+        castSession.loadMedia(request);
+      }
+    }
+
     function connectWS() {
       ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
@@ -119,8 +139,13 @@
         if (data.type === 'yt_play') {
           document.getElementById('standby').style.display = 'none';
           document.getElementById('player-container').style.display = 'block';
-          player.loadVideoById(data.videoId);
-          player.playVideo();
+          
+          if (castSession) {
+            castToTV(data.videoId);
+          } else {
+            player.loadVideoById(data.videoId);
+            player.playVideo();
+          }
         }
 
         if (data.type === 'yt_control') {
