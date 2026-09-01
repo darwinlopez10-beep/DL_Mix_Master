@@ -3,61 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master - Control Remoto</title>
+  <title>DL Mix-Master - Control Remoto Móvil</title>
   <style>
+    :root {
+      --bg-main: #0e1117;
+      --card-bg: #1f2636;
+      --orange-accent: #ff6b00;
+      --cyan-accent: #00d4ff;
+      --text-bright: #ffffff;
+      --text-sub: #8c9ba5;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-    body { background: #0d0f12; color: white; padding: 15px; }
-
-    h1 { font-size: 20px; color: #ff2a5f; text-align: center; margin-bottom: 15px; }
-
-    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
-    input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #1a1d24; color: white; }
-    button { background: #ff2a5f; color: white; border: none; padding: 12px 18px; border-radius: 6px; font-weight: bold; }
-
-    .results { display: flex; flex-direction: column; gap: 10px; }
-    .song-card { background: #1a1d24; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .song-title { font-size: 14px; flex: 1; margin-right: 10px; }
-    .btn-add { background: #00e5ff; color: #000; padding: 8px 12px; border-radius: 4px; font-weight: bold; border: none; }
+    body { background-color: var(--bg-main); color: var(--text-bright); padding: 12px; }
+    
+    header { text-align: center; padding: 10px 0; border-bottom: 1px solid #2a3346; margin-bottom: 12px; }
+    h2 { font-size: 18px; color: var(--orange-accent); }
+    
+    .search-box { display: flex; gap: 6px; margin-bottom: 14px; }
+    .search-box input { flex: 1; padding: 10px; background: #161b26; border: 1px solid #2a3346; border-radius: 6px; color: #fff; font-size: 14px; }
+    .search-box button { padding: 10px 14px; background: var(--orange-accent); border: none; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    
+    .results { display: flex; flex-direction: column; gap: 8px; }
+    .song-card { background: var(--card-bg); padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; border: 1px solid #2a3346; }
+    .song-title { font-size: 13px; font-weight: bold; }
+    .btn-group { display: flex; gap: 8px; }
+    .btn-deck { flex: 1; padding: 8px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    .btn-a { background: var(--orange-accent); color: #000; }
+    .btn-b { background: var(--cyan-accent); color: #000; }
+    
+    #status { font-size: 11px; text-align: center; color: var(--text-sub); margin-bottom: 8px; }
   </style>
 </head>
 <body>
 
-  <h1>📱 CONTROL REMOTO DJ</h1>
+  <header>
+    <h2>📱 MANDO DL MIX-MASTER</h2>
+    <div id="status">Conectando con la laptop principal...</div>
+  </header>
 
   <div class="search-box">
-    <input type="text" id="query" placeholder="Buscar karaoke o canción...">
-    <button onclick="searchMusic()">BUSCAR</button>
+    <input type="text" id="q" placeholder="Buscar canción o karaoke..." onkeydown="if(event.key==='Enter') search()">
+    <button onclick="search()">BUSCAR</button>
   </div>
 
   <div class="results" id="results"></div>
 
   <script>
-    let ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    const statusDiv = document.getElementById('status');
 
-    async function searchMusic() {
-      const q = document.getElementById('query').value;
-      if (!q) return;
-      
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      
-      const container = document.getElementById('results');
-      container.innerHTML = '';
+    ws.onopen = () => { statusDiv.innerText = "🟢 Conectado a la Consola Principal"; statusDiv.style.color = "#00e676"; };
+    ws.onclose = () => { statusDiv.innerText = "🔴 Desconectado de la Consola"; statusDiv.style.color = "#ff1744"; };
 
-      data.forEach(song => {
-        const card = document.createElement('div');
-        card.className = 'song-card';
-        card.innerHTML = `
-          <div class="song-title">${song.title}</div>
-          <button class="btn-add" onclick="playSong('${song.videoId}')">▶ Cargar</button>
-        `;
-        container.appendChild(card);
-      });
+    async function search() {
+      const query = document.getElementById('q').value;
+      if (!query) return;
+      const resContainer = document.getElementById('results');
+      resContainer.innerHTML = '<div style="text-align:center; padding:15px; color:#aaa;">Buscando...</div>';
+
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const songs = await res.json();
+        resContainer.innerHTML = '';
+
+        songs.forEach(song => {
+          const card = document.createElement('div');
+          card.className = 'song-card';
+          card.innerHTML = `
+            <div class="song-title">${song.title}</div>
+            <div class="btn-group">
+              <button class="btn-deck btn-a" onclick="sendToDeck('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">ENVIAR A DECK A</button>
+              <button class="btn-deck btn-b" onclick="sendToDeck('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">ENVIAR A DECK B</button>
+            </div>
+          `;
+          resContainer.appendChild(card);
+        });
+      } catch (e) {
+        resContainer.innerHTML = '<div style="text-align:center; padding:15px; color:#ff1744;">Error en la búsqueda.</div>';
+      }
     }
 
-    function playSong(videoId) {
-      ws.send(JSON.stringify({ type: 'yt_play', videoId: videoId }));
-      alert('¡Canción enviada a la consola de la PC!');
+    function sendToDeck(deck, videoId, title) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'yt_play', deck, videoId, title }));
+        alert(`¡Enviado a DECK ${deck}!`);
+      } else {
+        alert('Error: No hay conexión con la consola principal.');
+      }
     }
   </script>
 </body>

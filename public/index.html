@@ -243,6 +243,14 @@
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'yt_play') {
+          loadVideoDirect(data.deck, data.videoId, data.title || 'Pista Remota');
+        }
+      } catch(e) {}
+    };
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
