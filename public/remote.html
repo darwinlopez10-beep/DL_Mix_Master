@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DL Mix-Master - Control Remoto</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+    body { background: #0d0f12; color: white; padding: 15px; }
+
+    h1 { font-size: 20px; color: #ff2a5f; text-align: center; margin-bottom: 15px; }
+
+    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
+    input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #333; background: #1a1d24; color: white; }
+    button { background: #ff2a5f; color: white; border: none; padding: 12px 18px; border-radius: 6px; font-weight: bold; }
+
+    .results { display: flex; flex-direction: column; gap: 10px; }
+    .song-card { background: #1a1d24; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .song-title { font-size: 14px; flex: 1; margin-right: 10px; }
+    .btn-add { background: #00e5ff; color: #000; padding: 8px 12px; border-radius: 4px; font-weight: bold; border: none; }
+  </style>
+</head>
+<body>
+
+  <h1>📱 CONTROL REMOTO DJ</h1>
+
+  <div class="search-box">
+    <input type="text" id="query" placeholder="Buscar karaoke o canción...">
+    <button onclick="searchMusic()">BUSCAR</button>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <script>
+    let ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+
+    async function searchMusic() {
+      const q = document.getElementById('query').value;
+      if (!q) return;
+      
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+
+      data.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'song-card';
+        card.innerHTML = `
+          <div class="song-title">${song.title}</div>
+          <button class="btn-add" onclick="playSong('${song.videoId}')">▶ Cargar</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function playSong(videoId) {
+      ws.send(JSON.stringify({ type: 'yt_play', videoId: videoId }));
+      alert('¡Canción enviada a la consola de la PC!');
+    }
+  </script>
+</body>
+</html>
