@@ -62,38 +62,80 @@
   </div>
   <button class="tv-btn" onclick="window.open('/tv.html', '_blank')">📺 Abrir Pantalla de TV</button>
   <script>
-    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    let ws;
+    function connectWS() {
+      ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+      ws.onclose = () => setTimeout(connectWS, 2000);
+    }
+    connectWS();
+
+    async function fetchWithTimeout(url, timeoutMs = 3500) {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (e) {
+        clearTimeout(id);
+        return null;
+      }
+    }
+
     async function searchMusic() {
       const q = document.getElementById('query').value.trim();
       if (!q) return;
       const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '<div style="text-align:center; color:#38bdf8; padding:20px;">Buscando karaokes en internet...</div>';
-      try {
-        const res = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`);
-        const items = await res.json();
-        resultsDiv.innerHTML = '';
-        items.slice(0, 10).forEach(item => {
-          if (item.videoId) {
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            div.innerHTML = `
-              <img class="result-img" src="https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg">
-              <div class="result-info">${item.title}</div>
-              <button class="btn-add" onclick="playVideo('${item.videoId}', '${item.title.replace(/'/g, "")}')">▶ TV</button>
-            `;
-            resultsDiv.appendChild(div);
-          }
-        });
-      } catch (e) {
-        resultsDiv.innerHTML = '<div style="text-align:center; color:#ef4444; padding:15px;">Error de conexión al buscar. Intenta de nuevo.</div>';
+      resultsDiv.innerHTML = '<div style="text-align:center; color:#38bdf8; padding:20px;">Buscando en red multiservidor...</div>';
+
+      const endpoints = [
+        `https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
+        `https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
+        `https://vid.puffyan.us/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`,
+        `https://invidious.drgns.space/api/v1/search?q=${encodeURIComponent(q + ' karaoke')}`
+      ];
+
+      let items = null;
+      for (const endpoint of endpoints) {
+        items = await fetchWithTimeout(endpoint);
+        if (items && Array.isArray(items) && items.length > 0) break;
       }
+
+      resultsDiv.innerHTML = '';
+
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        resultsDiv.innerHTML = '<div style="text-align:center; color:#ef4444; padding:15px;">No se pudo conectar a los servidores. Intenta nuevamente.</div>';
+        return;
+      }
+
+      items.slice(0, 10).forEach(item => {
+        const videoId = item.videoId || (item.url ? item.url.split('v=')[1] : null);
+        if (videoId && item.title) {
+          const cleanTitle = item.title.replace(/'/g, "").replace(/"/g, "");
+          const div = document.createElement('div');
+          div.className = 'result-item';
+          div.innerHTML = `
+            <img class="result-img" src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" onerror="this.src='https://via.placeholder.com/50x38/1f242d/ffffff?text=Video'">
+            <div class="result-info">${item.title}</div>
+            <button class="btn-add" onclick="playVideo('${videoId}', '${cleanTitle}')">▶ TV</button>
+          `;
+          resultsDiv.appendChild(div);
+        }
+      });
     }
+
     function playVideo(id, title) {
       document.getElementById('current-song').innerText = title;
-      ws.send(JSON.stringify({ type: 'yt_play', videoId: id, title: title }));
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'yt_play', videoId: id, title: title }));
+      }
     }
+
     function sendAction(action) {
-      ws.send(JSON.stringify({ type: 'yt_control', action: action }));
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'yt_control', action: action }));
+      }
     }
   </script>
 </body>
