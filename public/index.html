@@ -21,115 +21,76 @@
     body { background-color: var(--bg-main); color: var(--text-bright); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
     header {
-      background: #080a0e;
-      padding: 6px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid var(--border-color);
+      background: #080a0e; padding: 6px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color);
     }
     .logo { font-size: 15px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
     .top-actions { display: flex; gap: 8px; }
     .btn-action {
       background: #222a3d; color: #fff; border: 1px solid #36425e; padding: 5px 12px;
       font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;
-      transition: all 0.2s;
     }
-    .btn-action:hover { background: #2f3b56; }
     .btn-action.tv { background: var(--orange-accent); color: #000; border: none; }
 
-    /* Layout Ajustado */
     .console-container {
-      display: grid;
-      grid-template-columns: 1fr 340px 1fr;
-      grid-template-rows: auto 1fr;
-      gap: 8px;
-      padding: 8px;
-      flex: 1;
-      height: calc(100vh - 42px);
-      overflow-y: auto;
+      display: grid; grid-template-columns: 1fr 340px 1fr; grid-template-rows: auto 1fr; gap: 8px; padding: 8px; flex: 1; height: calc(100vh - 42px); overflow-y: auto;
     }
 
     .deck-panel {
-      background: var(--panel-bg); border-radius: 6px; padding: 8px;
-      display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
+      background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
 
     .deck-top-info {
-      display: flex; justify-content: space-between; align-items: center;
-      background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center; background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .deck-tag { font-weight: 900; font-size: 12px; }
     .deck-tag.a { color: var(--orange-accent); }
     .deck-tag.b { color: var(--cyan-accent); }
-    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-    .fx-bar { display: flex; gap: 4px; background: #0b0e14; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); }
-    .fx-btn { flex: 1; padding: 3px; background: #1c2333; border: 1px solid #2f3b56; color: var(--text-sub); font-size: 9px; font-weight: 800; border-radius: 2px; text-align: center; }
-    .fx-btn.active { background: var(--orange-accent); color: #000; }
-
-    /* PANTALLAS MÁS GRANDES (230px de alto) */
-    .video-viewport { width: 100%; height: 230px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+    /* PANTALLAS MÁS GRANDES */
+    .video-viewport { width: 100%; height: 210px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; }
+
+    /* BARRA DE MINUTERO / PROGRESO */
+    .timeline-control {
+      background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
+    }
+    .timeline-time { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-sub); font-weight: bold; }
+    .timeline-slider { width: 100%; accent-color: var(--orange-accent); cursor: pointer; height: 4px; }
 
     .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
     .pad-btn {
-      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0;
-      font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
+      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 5px 0; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
     }
-    .pad-btn:hover { background: #2c364e; }
 
     .transport-row { display: flex; gap: 4px; }
-    .t-btn {
-      flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center;
-    }
+    .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
     .t-btn.play { background: var(--green-accent); color: #000; }
     .t-btn.cue { background: var(--orange-accent); color: #000; }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
-    /* MEZCLADOR CENTRAL CON VOLUMEN DEDICADO */
+    /* MEZCLADOR CENTRAL CON VOLUMEN */
     .mixer-panel {
-      background: var(--panel-bg); border-radius: 6px; padding: 8px;
-      display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
+      background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
-
-    .vu-meters-container {
-      display: flex; justify-content: space-around; background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);
-    }
-    .vu-channel { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; color: var(--text-sub); font-weight: bold; }
-    .vu-meter-strip { width: 8px; height: 60px; background: #121620; border-radius: 2px; display: flex; flex-direction: column-reverse; padding: 1px; border: 1px solid #222b3d; }
-    .vu-meter-bar { width: 100%; height: 70%; background: linear-gradient(to top, #00e676 60%, #ffea00 85%, #ff1744 100%); border-radius: 1px; }
-
-    /* SECCIÓN DE VOLUMEN DE CANAL (VOL A Y VOL B) */
     .volume-faders-row {
       display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
-    .fader-unit input[type=range] {
-      writing-mode: bt-lr; /* Vertical slider */
-      appearance: slider-vertical;
-      width: 16px; height: 90px; cursor: pointer; accent-color: var(--orange-accent);
-    }
+    .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
 
     .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; background: var(--card-bg); padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); }
     .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 8px; color: var(--text-sub); font-weight: 700; gap: 2px; }
     .knob-unit input[type=range] { width: 100%; accent-color: var(--orange-accent); cursor: pointer; }
 
-    .clean-crossfader-box {
-      background: #080a0e; border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; text-align: center;
-    }
+    .clean-crossfader-box { background: #080a0e; border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; text-align: center; }
     .crossfader-label { font-size: 9px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; }
-    .clean-crossfader-box input[type=range] {
-      width: 100%; margin-top: 4px; appearance: none; height: 6px; background: #1a212f; border-radius: 3px; outline: none; border: 1px solid #2f3b56;
-    }
-    .clean-crossfader-box input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff;
-    }
+    .clean-crossfader-box input[type=range] { width: 100%; margin-top: 4px; appearance: none; height: 6px; background: #1a212f; border-radius: 3px; outline: none; border: 1px solid #2f3b56; }
+    .clean-crossfader-box input[type=range]::-webkit-slider-thumb { appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff; }
 
-    /* BÚSQUEDA Y LISTA EXPANDIDA MUCHO MÁS ABAJO */
+    /* BÚSQUEDA Y LISTA EXTENDIDA HACIA ABAJO */
     .browser-panel {
-      grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 10px; display: flex; gap: 10px; border: 1px solid var(--border-color);
-      min-height: 380px;
+      grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 10px; display: flex; gap: 10px; border: 1px solid var(--border-color); min-height: 380px;
     }
     .tree-sidebar { width: 160px; background: #080a0e; border-radius: 4px; padding: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 6px; color: var(--text-sub); border: 1px solid var(--border-color); }
     .tree-node { padding: 6px 10px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
@@ -140,17 +101,9 @@
     .search-input-group input { flex: 1; padding: 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
     .search-input-group button { padding: 8px 16px; background: var(--orange-accent); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
 
-    /* TABLA EXPANDIDA HACIA ABAJO */
-    .songs-table { flex: 1; min-height: 300px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
+    .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
     .song-row:hover { background: #161c28; }
-
-    #qr-modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
-    }
-    .modal-content { background: var(--panel-bg); border: 2px solid var(--orange-accent); padding: 20px; border-radius: 8px; text-align: center; }
-    #qr-img { width: 170px; height: 170px; background: white; padding: 4px; border-radius: 4px; margin: 10px auto; }
   </style>
 </head>
 <body>
@@ -158,49 +111,31 @@
   <header>
     <div class="logo">🎛️ DL MIX-MASTER PRO</div>
     <div class="top-actions">
-      <button class="btn-action" onclick="toggleQR()">📱 CONTROL REMOTO QR</button>
       <button class="btn-action tv" onclick="openTV()">📺 PANTALLA TV (HDMI)</button>
     </div>
   </header>
 
-  <div id="qr-modal">
-    <div class="modal-content">
-      <h3 style="color:var(--orange-accent)">CONTROL REMOTO</h3>
-      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código para controlar la consola desde tu teléfono:</p>
-      <img id="qr-img" src="" alt="QR">
-      <button class="btn-action" style="width:100%; justify-content:center" onclick="toggleQR()">CERRAR</button>
-    </div>
-  </div>
-
   <div class="console-container">
-    <!-- DECK A -->
     <div class="deck-panel">
       <div class="deck-top-info">
         <span class="deck-tag a">DECK A</span>
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="fx-bar">
-        <div class="fx-btn active">FX 1</div>
-        <div class="fx-btn">FX 2</div>
-        <div class="fx-btn">FILTER</div>
-        <div class="fx-btn">FLANGER</div>
-      </div>
-
-      <!-- REPRODUCTOR A AMPLIADO -->
       <div class="video-viewport">
         <div id="player-a"></div>
       </div>
 
+      <div class="timeline-control">
+        <div class="timeline-time">
+          <span id="time-a-curr">00:00</span>
+          <span id="time-a-dur">00:00</span>
+        </div>
+        <input type="range" id="seek-a" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('A', this.value)">
+      </div>
+
       <div class="pads-grid">
-        <div class="pad-btn">HOT 1</div>
-        <div class="pad-btn">HOT 2</div>
-        <div class="pad-btn">HOT 3</div>
-        <div class="pad-btn">HOT 4</div>
-        <div class="pad-btn">LOOP 2</div>
-        <div class="pad-btn">LOOP 4</div>
-        <div class="pad-btn">LOOP 8</div>
-        <div class="pad-btn">JUMP</div>
+        <div class="pad-btn">HOT 1</div><div class="pad-btn">HOT 2</div><div class="pad-btn">HOT 3</div><div class="pad-btn">HOT 4</div>
       </div>
 
       <div class="transport-row">
@@ -210,24 +145,7 @@
       </div>
     </div>
 
-    <!-- MEZCLADOR CENTRAL CON VOLUMEN A/B -->
     <div class="mixer-panel">
-      <div class="vu-meters-container">
-        <div class="vu-channel">
-          <span>CH A</span>
-          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
-        </div>
-        <div class="vu-channel">
-          <span>MASTER</span>
-          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
-        </div>
-        <div class="vu-channel">
-          <span>CH B</span>
-          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
-        </div>
-      </div>
-
-      <!-- DESLIZADORES DE VOLUMEN DE CANAL A Y B -->
       <div class="volume-faders-row">
         <div class="fader-unit">
           <span>VOL A</span>
@@ -240,8 +158,6 @@
       </div>
 
       <div class="eq-grid">
-        <div class="knob-unit"><span>GAIN A</span><input type="range" value="80"></div>
-        <div class="knob-unit"><span>GAIN B</span><input type="range" value="80"></div>
         <div class="knob-unit"><span>HIGH A</span><input type="range" value="50"></div>
         <div class="knob-unit"><span>HIGH B</span><input type="range" value="50"></div>
         <div class="knob-unit"><span>MID A</span><input type="range" value="50"></div>
@@ -251,39 +167,31 @@
       </div>
 
       <div class="clean-crossfader-box">
-        <div class="crossfader-label">CROSSFADER VIDEO & AUDIO</div>
+        <div class="crossfader-label">CROSSFADER</div>
         <input type="range" id="crossfader" min="0" max="100" value="50" oninput="updateCrossfader(this.value)">
       </div>
     </div>
 
-    <!-- DECK B -->
     <div class="deck-panel">
       <div class="deck-top-info">
         <span class="deck-tag b">DECK B</span>
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="fx-bar">
-        <div class="fx-btn active">FX 1</div>
-        <div class="fx-btn">FX 2</div>
-        <div class="fx-btn">FILTER</div>
-        <div class="fx-btn">FLANGER</div>
-      </div>
-
-      <!-- REPRODUCTOR B AMPLIADO -->
       <div class="video-viewport">
         <div id="player-b"></div>
       </div>
 
+      <div class="timeline-control">
+        <div class="timeline-time">
+          <span id="time-b-curr">00:00</span>
+          <span id="time-b-dur">00:00</span>
+        </div>
+        <input type="range" id="seek-b" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('B', this.value)">
+      </div>
+
       <div class="pads-grid">
-        <div class="pad-btn">HOT 1</div>
-        <div class="pad-btn">HOT 2</div>
-        <div class="pad-btn">HOT 3</div>
-        <div class="pad-btn">HOT 4</div>
-        <div class="pad-btn">LOOP 2</div>
-        <div class="pad-btn">LOOP 4</div>
-        <div class="pad-btn">LOOP 8</div>
-        <div class="pad-btn">JUMP</div>
+        <div class="pad-btn">HOT 1</div><div class="pad-btn">HOT 2</div><div class="pad-btn">HOT 3</div><div class="pad-btn">HOT 4</div>
       </div>
 
       <div class="transport-row">
@@ -293,25 +201,21 @@
       </div>
     </div>
 
-    <!-- BÚSQUEDA Y LISTA GRANDE (HACIA ABAJO) -->
     <div class="browser-panel">
       <div class="tree-sidebar">
-        <div class="tree-node active">📁 Pistas</div>
-        <div class="tree-node">⚡ Auto DJ</div>
-        <div class="tree-node">📜 Listas</div>
-        <div class="tree-node">📦 Cajas</div>
-        <div class="tree-node">🕒 Historial</div>
+        <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Pistas</div>
+        <div class="tree-node" id="tab-historial" onclick="showHistory()">🕒 Historial</div>
       </div>
 
       <div class="search-content">
-        <div class="search-input-group">
+        <div class="search-input-group" id="searchBarGroup">
           <input type="text" id="searchInput" placeholder="Buscar canciones o karaokes..." onkeydown="if(event.key==='Enter') doSearch()">
           <button onclick="doSearch()">BUSCAR</button>
         </div>
 
         <div class="songs-table" id="resultsList">
           <div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">
-            Ingresa un término de búsqueda para ver el listado extendido de canciones
+            Ingresa un término para buscar canciones o haz clic en "Historial" para ver tu registro.
           </div>
         </div>
       </div>
@@ -322,24 +226,32 @@
   <script>
     let playerA, playerB;
     let volAVal = 100, volBVal = 100;
+    let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
+        events: { 'onStateChange': () => updateTimer('A') }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
+        events: { 'onStateChange': () => updateTimer('B') }
       });
+
+      // Bucle de sincronización de tiempo
+      setInterval(syncTimelines, 1000);
     }
 
+    /* BÚSQUEDA */
     async function doSearch() {
+      document.getElementById('searchBarGroup').style.display = 'flex';
       const q = document.getElementById('searchInput').value;
       if (!q) return;
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Cargando lista de canciones...</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Cargando lista...</div>';
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
@@ -360,74 +272,116 @@
           list.appendChild(row);
         });
       } catch (e) {
-        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:30px; font-size:12px">Error de conexión al buscar pistas.</div>';
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:30px; font-size:12px">Error al buscar canciones. Reintenta.</div>';
       }
     }
 
-    /* FIX DE CARGA RÁPIDA E INSTANTÁNEA */
+    /* CARGAR Y GUARDAR EN HISTORIAL */
     function loadVideo(deck, videoId, title) {
       if (deck === 'A') {
-        if (playerA && playerA.loadVideoById) {
-          playerA.loadVideoById(videoId);
-          playerA.playVideo();
-        }
+        if (playerA && playerA.loadVideoById) playerA.loadVideoById(videoId);
         document.getElementById('title-a').innerText = title;
       } else {
-        if (playerB && playerB.loadVideoById) {
-          playerB.loadVideoById(videoId);
-          playerB.playVideo();
-        }
+        if (playerB && playerB.loadVideoById) playerB.loadVideoById(videoId);
         document.getElementById('title-b').innerText = title;
       }
+
+      // Guardar en el Historial de la PC
+      saveToHistory(title, videoId);
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'yt_play', deck, videoId }));
       }
     }
 
+    function saveToHistory(title, videoId) {
+      const item = { title, videoId, date: new Date().toLocaleTimeString() };
+      songHistory.unshift(item);
+      if (songHistory.length > 30) songHistory.pop(); // Guardar hasta 30 canciones
+      localStorage.setItem('dl_history', JSON.stringify(songHistory));
+    }
+
+    function showHistory() {
+      const list = document.getElementById('resultsList');
+      if (songHistory.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">El historial está vacío.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      songHistory.forEach(song => {
+        const row = document.createElement('div');
+        row.className = 'song-row';
+        const cleanTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        row.innerHTML = `
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
+          <div style="display:flex; gap:6px">
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('A', '${song.videoId}', '${cleanTitle}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideo('B', '${song.videoId}', '${cleanTitle}')">+ DECK B</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    /* CONTROL DE MINUTERO / ADELANTAR Y ATRASAR */
+    function syncTimelines() {
+      if (playerA && playerA.getDuration) {
+        const cur = playerA.getCurrentTime() || 0;
+        const dur = playerA.getDuration() || 0;
+        if (dur > 0) {
+          document.getElementById('seek-a').value = (cur / dur) * 100;
+          document.getElementById('time-a-curr').innerText = formatTime(cur);
+          document.getElementById('time-a-dur').innerText = formatTime(dur);
+        }
+      }
+      if (playerB && playerB.getDuration) {
+        const cur = playerB.getCurrentTime() || 0;
+        const dur = playerB.getDuration() || 0;
+        if (dur > 0) {
+          document.getElementById('seek-b').value = (cur / dur) * 100;
+          document.getElementById('time-b-curr').innerText = formatTime(cur);
+          document.getElementById('time-b-dur').innerText = formatTime(dur);
+        }
+      }
+    }
+
+    function seekVideo(deck, percent) {
+      const player = (deck === 'A') ? playerA : playerB;
+      if (player && player.getDuration) {
+        const dur = player.getDuration();
+        const targetSeconds = (percent / 100) * dur;
+        player.seekTo(targetSeconds, true);
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
     function controlDeck(deck, action) {
       const player = (deck === 'A') ? playerA : playerB;
       if (!player) return;
       if (action === 'play') player.playVideo();
-      if (action === 'pause') player.pauseVideo();
       if (action === 'cue') { player.seekTo(0); player.pauseVideo(); }
     }
 
-    /* CONTROL DE VOLUMEN POR CANAL */
     function setChannelVolume(deck, val) {
-      if (deck === 'A') {
-        volAVal = val;
-        if (playerA && playerA.setVolume) playerA.setVolume(val);
-      } else {
-        volBVal = val;
-        if (playerB && playerB.setVolume) playerB.setVolume(val);
-      }
+      if (deck === 'A') { volAVal = val; if (playerA) playerA.setVolume(val); }
+      else { volBVal = val; if (playerB) playerB.setVolume(val); }
     }
 
     function updateCrossfader(val) {
       const factorA = (100 - val) / 50;
       const factorB = val / 50;
-      
-      const effectiveVolA = Math.min(100, volAVal * factorA);
-      const effectiveVolB = Math.min(100, volBVal * factorB);
-
-      if (playerA && playerA.setVolume) playerA.setVolume(effectiveVolA);
-      if (playerB && playerB.setVolume) playerB.setVolume(effectiveVolB);
-
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
-      }
+      if (playerA) playerA.setVolume(Math.min(100, volAVal * factorA));
+      if (playerB) playerB.setVolume(Math.min(100, volBVal * factorB));
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
     }
 
     function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
-
-    function toggleQR() {
-      const modal = document.getElementById('qr-modal');
-      const img = document.getElementById('qr-img');
-      const fullUrl = window.location.protocol + '//' + window.location.host + '/index.html';
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullUrl)}`;
-      modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-    }
   </script>
 </body>
 </html>
