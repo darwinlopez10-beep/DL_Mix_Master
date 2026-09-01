@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const YouTube = require('youtube-sr').default;
+const yts = require('yt-search');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,11 +15,12 @@ app.get('/api/search', async (req, res) => {
   const query = req.query.q;
   if (!query) return res.json([]);
   try {
-    const results = await YouTube.search(query + ' karaoke', { limit: 12, type: 'video' });
-    const formatted = results.map(v => ({
-      videoId: v.id,
+    const r = await yts(query + ' karaoke');
+    const videos = r.videos.slice(0, 12);
+    const formatted = videos.map(v => ({
+      videoId: v.videoId,
       title: v.title,
-      thumbnail: v.thumbnail ? v.thumbnail.url : `https://img.youtube.com/vi/${v.id}/hqdefault.jpg`
+      thumbnail: v.thumbnail || `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`
     }));
     res.json(formatted);
   } catch (error) {
