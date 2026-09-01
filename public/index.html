@@ -3,243 +3,304 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master Pro - Mixxx Console</title>
+  <title>DL Mix-Master Pro - Consola DJ Ultra</title>
   <style>
     :root {
-      --bg-dark: #12161f;
-      --panel-dark: #181d28;
-      --card-bg: #202636;
-      --orange-bright: #ff6b00;
-      --cyan-bright: #00d4ff;
-      --green-vometer: #00e676;
-      --text: #d1d5db;
-      --text-muted: #6b7280;
+      --bg-main: #0e1117;
+      --panel-bg: #161b26;
+      --card-bg: #1f2636;
+      --orange-accent: #ff6b00;
+      --cyan-accent: #00d4ff;
+      --green-accent: #00e676;
+      --text-bright: #ffffff;
+      --text-sub: #8c9ba5;
+      --border-color: #2a3346;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
-    body { background-color: var(--bg-dark); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
+    body { background-color: var(--bg-main); color: var(--text-bright); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Header superior */
+    /* Barra Superior Profesional */
     header {
-      background: #0b0d13;
-      padding: 6px 16px;
+      background: #080a0e;
+      padding: 6px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid #2a3246;
+      border-bottom: 2px solid var(--border-color);
     }
-    .brand { font-size: 16px; font-weight: 900; color: var(--orange-bright); letter-spacing: 1px; }
-    .header-btns { display: flex; gap: 8px; }
-    .btn-top {
-      background: #2a3246; color: white; border: 1px solid #3d4863; padding: 6px 12px;
-      font-size: 11px; font-weight: 800; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    .logo { font-size: 15px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .top-actions { display: flex; gap: 8px; }
+    .btn-action {
+      background: #222a3d; color: #fff; border: 1px solid #36425e; padding: 5px 12px;
+      font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
     }
-    .btn-top.tv { background: var(--orange-bright); border: none; }
+    .btn-action:hover { background: #2f3b56; }
+    .btn-action.tv { background: var(--orange-accent); color: #000; border: none; }
 
-    /* Layout Consola DJ Mixxx */
-    .mixxx-grid {
+    /* Layout Principal de la Consola */
+    .console-container {
       display: grid;
-      grid-template-columns: 1fr 320px 1fr;
+      grid-template-columns: 1fr 340px 1fr;
       grid-template-rows: auto 1fr;
-      gap: 10px;
-      padding: 10px;
+      gap: 8px;
+      padding: 8px;
       flex: 1;
-      height: calc(100vh - 45px);
+      height: calc(100vh - 42px);
     }
 
-    /* Decks Styles */
-    .deck {
-      background: var(--panel-dark); border-radius: 6px; padding: 10px;
-      display: flex; flex-direction: column; gap: 8px; border: 1px solid #2a3246;
+    /* Módulos Decks A & B */
+    .deck-panel {
+      background: var(--panel-bg); border-radius: 6px; padding: 8px;
+      display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
 
-    .deck-header { display: flex; justify-content: space-between; align-items: center; background: #0b0d13; padding: 6px 10px; border-radius: 4px; }
-    .title-txt { font-size: 11px; font-weight: bold; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 180px; }
-
-    .video-box { width: 100%; height: 160px; background: #000; border-radius: 4px; overflow: hidden; position: relative; border: 1px solid #2a3246; }
-    .video-box iframe, .video-box div { width: 100%; height: 100%; }
-
-    /* Filas de botones tipo Mixxx */
-    .btn-row { display: flex; gap: 4px; }
-    .btn-m {
-      flex: 1; padding: 6px 0; background: #2a3246; border: 1px solid #3d4863; color: white;
-      font-size: 10px; font-weight: 800; border-radius: 3px; cursor: pointer; text-align: center;
+    .deck-top-info {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
-    .btn-m.play { background: #00c853; color: #000; }
-    .btn-m.cue { background: var(--orange-bright); color: #000; }
-    .btn-m.sync { background: var(--cyan-bright); color: #000; }
+    .deck-tag { font-weight: 900; font-size: 12px; }
+    .deck-tag.a { color: var(--orange-accent); }
+    .deck-tag.b { color: var(--cyan-accent); }
+    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-    /* Mezclador Central estilo Foto */
-    .mixer-central {
-      background: var(--panel-dark); border-radius: 6px; padding: 10px;
-      display: flex; flex-direction: column; gap: 8px; border: 1px solid #2a3246;
-    }
+    /* Módulo FX Superior */
+    .fx-bar { display: flex; gap: 4px; background: #0b0e14; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); }
+    .fx-btn { flex: 1; padding: 3px; background: #1c2333; border: 1px solid #2f3b56; color: var(--text-sub); font-size: 9px; font-weight: 800; border-radius: 2px; text-align: center; }
+    .fx-btn.active { background: var(--orange-accent); color: #000; }
 
-    .mixer-top-meters {
-      display: flex; justify-content: space-around; background: #0b0d13; padding: 8px; border-radius: 4px; border: 1px solid #2a3246;
-    }
-    .vometer-col { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; color: var(--text-muted); }
-    .vometer-bar { width: 10px; height: 90px; background: #181d28; border-radius: 2px; overflow: hidden; display: flex; flex-direction: column-reverse; padding: 1px; }
-    .vometer-fill { width: 100%; height: 75%; background: linear-gradient(to top, #00e676, #ffea00, #ff1744); border-radius: 1px; }
+    /* Visor de Video */
+    .video-viewport { width: 100%; height: 145px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+    .video-viewport div { width: 100%; height: 100%; }
 
-    .knobs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; background: var(--card-bg); padding: 8px; border-radius: 4px; }
-    .knob-box { display: flex; flex-direction: column; align-items: center; font-size: 9px; color: var(--text-muted); gap: 2px; }
-    .knob-box input[type=range] { width: 100%; accent-color: var(--orange-bright); }
+    /* Performance Pads (Hot Cues, Loops) */
+    .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .pad-btn {
+      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0;
+      font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
+    }
+    .pad-btn:hover { background: #2c364e; }
 
-    /* Crossfader Sin Franja Amarilla (Limpio tipo Mixxx) */
-    .crossfader-clean {
-      background: #0b0d13; border: 1px solid #2a3246; padding: 10px; border-radius: 6px; text-align: center;
+    /* Botones Transport (PLAY, CUE, SYNC) */
+    .transport-row { display: flex; gap: 4px; }
+    .t-btn {
+      flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center;
     }
-    .crossfader-clean span { font-size: 10px; font-weight: 900; color: var(--orange-bright); letter-spacing: 1px; }
-    .crossfader-clean input[type=range] {
-      width: 100%; margin-top: 6px; appearance: none; height: 8px; background: #202636; border-radius: 4px; outline: none; border: 1px solid #3d4863;
-    }
-    .crossfader-clean input[type=range]::-webkit-slider-thumb {
-      appearance: none; width: 22px; height: 28px; background: var(--orange-bright); border-radius: 3px; cursor: pointer; border: 2px solid #fff;
+    .t-btn.play { background: var(--green-accent); color: #000; }
+    .t-btn.cue { background: var(--orange-accent); color: #000; }
+    .t-btn.sync { background: var(--cyan-accent); color: #000; }
+
+    /* Mezclador Central */
+    .mixer-panel {
+      background: var(--panel-bg); border-radius: 6px; padding: 8px;
+      display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
 
-    /* Tabla / Biblioteca de Pistas */
-    .library-section {
-      grid-column: 1 / 4; background: var(--panel-dark); border-radius: 6px; padding: 10px; display: flex; gap: 10px; border: 1px solid #2a3246;
+    /* Vómetros LED Centrales */
+    .vu-meters-container {
+      display: flex; justify-content: space-around; background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color);
     }
-    .sidebar-tree { width: 160px; background: #0b0d13; border-radius: 4px; padding: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 6px; color: var(--text-muted); }
-    .tree-item { padding: 4px 6px; border-radius: 3px; cursor: pointer; }
-    .tree-item.active { background: #202636; color: var(--orange-bright); font-weight: bold; }
+    .vu-channel { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; color: var(--text-sub); font-weight: bold; }
+    .vu-meter-strip { width: 8px; height: 75px; background: #121620; border-radius: 2px; display: flex; flex-direction: column-reverse; padding: 1px; border: 1px solid #222b3d; }
+    .vu-meter-bar { width: 100%; height: 70%; background: linear-gradient(to top, #00e676 60%, #ffea00 85%, #ff1744 100%); border-radius: 1px; }
 
-    .main-search-area { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-    .search-bar { display: flex; gap: 6px; }
-    .search-bar input { flex: 1; padding: 8px; background: #0b0d13; border: 1px solid #2a3246; color: #fff; border-radius: 4px; font-size: 12px; }
-    .search-bar button { padding: 8px 14px; background: var(--orange-bright); color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    /* Perillas Ecualizador */
+    .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--card-bg); padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); }
+    .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 8px; color: var(--text-sub); font-weight: 700; gap: 2px; }
+    .knob-unit input[type=range] { width: 100%; accent-color: var(--orange-accent); cursor: pointer; }
 
-    .tracks-table { flex: 1; overflow-y: auto; max-height: 140px; background: #0b0d13; border-radius: 4px; border: 1px solid #2a3246; }
-    .track-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #181d28; font-size: 11px; }
-    .track-row:hover { background: #181d28; }
+    /* Crossfader Oscuro Limpio sin Franja Amarilla */
+    .clean-crossfader-box {
+      background: #080a0e; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center;
+    }
+    .crossfader-label { font-size: 9px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; }
+    .clean-crossfader-box input[type=range] {
+      width: 100%; margin-top: 4px; appearance: none; height: 6px; background: #1a212f; border-radius: 3px; outline: none; border: 1px solid #2f3b56;
+    }
+    .clean-crossfader-box input[type=range]::-webkit-slider-thumb {
+      appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff;
+    }
+
+    /* Navegador y Lista de Canciones */
+    .browser-panel {
+      grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; gap: 8px; border: 1px solid var(--border-color);
+    }
+    .tree-sidebar { width: 150px; background: #080a0e; border-radius: 4px; padding: 6px; font-size: 11px; display: flex; flex-direction: column; gap: 4px; color: var(--text-sub); border: 1px solid var(--border-color); }
+    .tree-node { padding: 5px 8px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .tree-node.active { background: #1f2636; color: var(--orange-accent); font-weight: bold; }
+
+    .search-content { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .search-input-group { display: flex; gap: 6px; }
+    .search-input-group input { flex: 1; padding: 7px 10px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 12px; outline: none; }
+    .search-input-group button { padding: 7px 14px; background: var(--orange-accent); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
+
+    .songs-table { flex: 1; overflow-y: auto; max-height: 125px; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
+    .song-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid #141924; font-size: 11px; }
+    .song-row:hover { background: #161c28; }
 
     /* Modal QR */
     #qr-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
     }
-    .modal-box { background: var(--panel-dark); border: 2px solid var(--orange-bright); padding: 20px; border-radius: 10px; text-align: center; }
-    #qr-img { width: 180px; height: 180px; background: white; padding: 6px; border-radius: 6px; margin: 10px auto; }
+    .modal-content { background: var(--panel-bg); border: 2px solid var(--orange-accent); padding: 20px; border-radius: 8px; text-align: center; }
+    #qr-img { width: 170px; height: 170px; background: white; padding: 4px; border-radius: 4px; margin: 10px auto; }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="brand">DL MIX-MASTER MIXXX PRO</div>
-    <div class="header-btns">
-      <button class="btn-top" onclick="toggleQR()">📱 CÓDIGO QR</button>
-      <button class="btn-top tv" onclick="openTV()">📺 PANTALLA TV (HDMI)</button>
+    <div class="logo">🎛️ DL MIX-MASTER PRO</div>
+    <div class="top-actions">
+      <button class="btn-action" onclick="toggleQR()">📱 CONTROL REMOTO QR</button>
+      <button class="btn-action tv" onclick="openTV()">📺 PANTALLA TV (HDMI)</button>
     </div>
   </header>
 
   <!-- Modal QR -->
   <div id="qr-modal">
-    <div class="modal-box">
-      <h3 style="color:var(--orange-bright)">CONTROL REMOTO</h3>
-      <p style="font-size:11px; color:var(--text-muted); margin-top:4px">Escanea desde tu móvil para controlar la consola:</p>
+    <div class="modal-content">
+      <h3 style="color:var(--orange-accent)">CONTROL REMOTO</h3>
+      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código para controlar la consola desde tu teléfono:</p>
       <img id="qr-img" src="" alt="QR">
-      <button class="btn-top" style="width:100%; justify-content:center" onclick="toggleQR()">CERRAR</button>
+      <button class="btn-action" style="width:100%; justify-content:center" onclick="toggleQR()">CERRAR</button>
     </div>
   </div>
 
-  <div class="mixxx-grid">
+  <div class="console-container">
     <!-- DECK A -->
-    <div class="deck">
-      <div class="deck-header">
-        <span style="color:var(--orange-bright); font-weight:bold; font-size:11px">DECK A</span>
-        <span class="title-txt" id="title-a">Sin Cargar</span>
+    <div class="deck-panel">
+      <div class="deck-top-info">
+        <span class="deck-tag a">DECK A</span>
+        <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
-      <div class="video-box">
+
+      <!-- FX Superior Deck A -->
+      <div class="fx-bar">
+        <div class="fx-btn active">FX 1</div>
+        <div class="fx-btn">FX 2</div>
+        <div class="fx-btn">FILTER</div>
+        <div class="fx-btn">FLANGER</div>
+      </div>
+
+      <div class="video-viewport">
         <div id="player-a"></div>
       </div>
-      <div class="btn-row">
-        <button class="btn-m sync">SYNC</button>
-        <button class="btn-m">HOT 1</button>
-        <button class="btn-m">HOT 2</button>
-        <button class="btn-m">LOOP 4</button>
+
+      <!-- Pads de Rendimiento Deck A -->
+      <div class="pads-grid">
+        <div class="pad-btn">HOT 1</div>
+        <div class="pad-btn">HOT 2</div>
+        <div class="pad-btn">HOT 3</div>
+        <div class="pad-btn">HOT 4</div>
+        <div class="pad-btn">LOOP 2</div>
+        <div class="pad-btn">LOOP 4</div>
+        <div class="pad-btn">LOOP 8</div>
+        <div class="pad-btn">JUMP</div>
       </div>
-      <div class="btn-row">
-        <button class="btn-m cue" onclick="controlDeck('A', 'cue')">CUE</button>
-        <button class="btn-m play" onclick="controlDeck('A', 'play')">PLAY</button>
-        <button class="btn-m" onclick="controlDeck('A', 'pause')">PAUSE</button>
+
+      <!-- Transporte Deck A -->
+      <div class="transport-row">
+        <button class="t-btn sync">SYNC</button>
+        <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
+        <button class="t-btn play" onclick="controlDeck('A', 'play')">PLAY</button>
       </div>
     </div>
 
     <!-- MEZCLADOR CENTRAL MIXXX -->
-    <div class="mixer-central">
-      <div class="mixer-top-meters">
-        <div class="vometer-col">
-          <span>VOL A</span>
-          <div class="vometer-bar"><div class="vometer-fill"></div></div>
+    <div class="mixer-panel">
+      <div class="vu-meters-container">
+        <div class="vu-channel">
+          <span>CH A</span>
+          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
         </div>
-        <div class="vometer-col">
-          <span>MAIN</span>
-          <div class="vometer-bar"><div class="vometer-fill"></div></div>
+        <div class="vu-channel">
+          <span>MASTER</span>
+          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
         </div>
-        <div class="vometer-col">
-          <span>VOL B</span>
-          <div class="vometer-bar"><div class="vometer-fill"></div></div>
+        <div class="vu-channel">
+          <span>CH B</span>
+          <div class="vu-meter-strip"><div class="vu-meter-bar"></div></div>
         </div>
       </div>
 
-      <div class="knobs-grid">
-        <div class="knob-box"><span>HIGH A</span><input type="range"></div>
-        <div class="knob-box"><span>HIGH B</span><input type="range"></div>
-        <div class="knob-box"><span>MID A</span><input type="range"></div>
-        <div class="knob-box"><span>MID B</span><input type="range"></div>
-        <div class="knob-box"><span>LOW A</span><input type="range"></div>
-        <div class="knob-box"><span>LOW B</span><input type="range"></div>
+      <div class="eq-grid">
+        <div class="knob-unit"><span>GAIN A</span><input type="range" value="80"></div>
+        <div class="knob-unit"><span>GAIN B</span><input type="range" value="80"></div>
+        <div class="knob-unit"><span>HIGH A</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>HIGH B</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>MID A</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>MID B</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>LOW A</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>LOW B</span><input type="range" value="50"></div>
       </div>
 
-      <!-- CROSSFADER LIMPION / SIN FRANJA AMARILLA -->
-      <div class="crossfader-clean">
-        <span>MEZCLA DE VIDEO Y AUDIO</span>
+      <!-- CROSSFADER LIMPION Y SIN FRANJA AMARILLA -->
+      <div class="clean-crossfader-box">
+        <div class="crossfader-label">CROSSFADER VIDEO & AUDIO</div>
         <input type="range" id="crossfader" min="0" max="100" value="50" oninput="updateCrossfader(this.value)">
       </div>
     </div>
 
     <!-- DECK B -->
-    <div class="deck">
-      <div class="deck-header">
-        <span style="color:var(--cyan-bright); font-weight:bold; font-size:11px">DECK B</span>
-        <span class="title-txt" id="title-b">Sin Cargar</span>
+    <div class="deck-panel">
+      <div class="deck-top-info">
+        <span class="deck-tag b">DECK B</span>
+        <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
-      <div class="video-box">
+
+      <!-- FX Superior Deck B -->
+      <div class="fx-bar">
+        <div class="fx-btn active">FX 1</div>
+        <div class="fx-btn">FX 2</div>
+        <div class="fx-btn">FILTER</div>
+        <div class="fx-btn">FLANGER</div>
+      </div>
+
+      <div class="video-viewport">
         <div id="player-b"></div>
       </div>
-      <div class="btn-row">
-        <button class="btn-m sync">SYNC</button>
-        <button class="btn-m">HOT 1</button>
-        <button class="btn-m">HOT 2</button>
-        <button class="btn-m">LOOP 4</button>
+
+      <!-- Pads de Rendimiento Deck B -->
+      <div class="pads-grid">
+        <div class="pad-btn">HOT 1</div>
+        <div class="pad-btn">HOT 2</div>
+        <div class="pad-btn">HOT 3</div>
+        <div class="pad-btn">HOT 4</div>
+        <div class="pad-btn">LOOP 2</div>
+        <div class="pad-btn">LOOP 4</div>
+        <div class="pad-btn">LOOP 8</div>
+        <div class="pad-btn">JUMP</div>
       </div>
-      <div class="btn-row">
-        <button class="btn-m cue" onclick="controlDeck('B', 'cue')">CUE</button>
-        <button class="btn-m play" onclick="controlDeck('B', 'play')">PLAY</button>
-        <button class="btn-m" onclick="controlDeck('B', 'pause')">PAUSE</button>
+
+      <!-- Transporte Deck B -->
+      <div class="transport-row">
+        <button class="t-btn sync">SYNC</button>
+        <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
+        <button class="t-btn play" onclick="controlDeck('B', 'play')">PLAY</button>
       </div>
     </div>
 
-    <!-- SECCIÓN NAVEGADOR DE PISTAS -->
-    <div class="library-section">
-      <div class="sidebar-tree">
-        <div class="tree-item active">📁 Pistas</div>
-        <div class="tree-item">⚡ Auto DJ</div>
-        <div class="tree-item">📜 Listas de reproducción</div>
-        <div class="tree-item">📦 Cajas</div>
+    <!-- NAVEGADOR DE PISTAS -->
+    <div class="browser-panel">
+      <div class="tree-sidebar">
+        <div class="tree-node active">📁 Pistas</div>
+        <div class="tree-node">⚡ Auto DJ</div>
+        <div class="tree-node">📜 Listas</div>
+        <div class="tree-node">📦 Cajas</div>
+        <div class="tree-node">🕒 Historial</div>
       </div>
 
-      <div class="main-search-area">
-        <div class="search-bar">
-          <input type="text" id="searchInput" placeholder="Buscar karaoke en YouTube..." onkeydown="if(event.key==='Enter') doSearch()">
+      <div class="search-content">
+        <div class="search-input-group">
+          <input type="text" id="searchInput" placeholder="Buscar canciones o karaokes en YouTube..." onkeydown="if(event.key==='Enter') doSearch()">
           <button onclick="doSearch()">BUSCAR</button>
         </div>
 
-        <div class="tracks-table" id="resultsList">
-          <div style="text-align:center; color:var(--text-muted); padding:30px; font-size:11px">
-            Escribe un artista o canción para cargar pistas
+        <div class="songs-table" id="resultsList">
+          <div style="text-align:center; color:var(--text-sub); padding:25px; font-size:11px">
+            Ingresa el nombre de un artista o canción para listar las pistas disponibles
           </div>
         </div>
       </div>
@@ -249,7 +310,7 @@
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let playerA, playerB;
-    let ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', { height: '100%', width: '100%', playerVars: { 'autoplay': 0, 'controls': 0 } });
@@ -259,23 +320,29 @@
     async function doSearch() {
       const q = document.getElementById('searchInput').value;
       if (!q) return;
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-      const data = await res.json();
       const list = document.getElementById('resultsList');
-      list.innerHTML = '';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:20px; font-size:11px">🔍 Buscando pistas rápidas...</div>';
 
-      data.forEach(song => {
-        const row = document.createElement('div');
-        row.className = 'track-row';
-        row.innerHTML = `
-          <span>${song.title} (${song.duration})</span>
-          <div>
-            <button class="btn-m" style="padding:4px 8px; background:var(--orange-bright); color:#000" onclick="loadVideo('A', '${song.videoId}', '${escape(song.title)}')">+ DECK A</button>
-            <button class="btn-m" style="padding:4px 8px; background:var(--cyan-bright); color:#000" onclick="loadVideo('B', '${song.videoId}', '${escape(song.title)}')">+ DECK B</button>
-          </div>
-        `;
-        list.appendChild(row);
-      });
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        list.innerHTML = '';
+
+        data.forEach(song => {
+          const row = document.createElement('div');
+          row.className = 'song-row';
+          row.innerHTML = `
+            <span><strong>${song.title}</strong> (${song.duration})</span>
+            <div>
+              <button class="pad-btn" style="padding:4px 8px; background:var(--orange-accent); color:#000; border:none" onclick="loadVideo('A', '${song.videoId}', '${escape(song.title)}')">+ DECK A</button>
+              <button class="pad-btn" style="padding:4px 8px; background:var(--cyan-accent); color:#000; border:none" onclick="loadVideo('B', '${song.videoId}', '${escape(song.title)}')">+ DECK B</button>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      } catch (e) {
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:11px">Error al cargar resultados. Intenta de nuevo.</div>';
+      }
     }
 
     function loadVideo(deck, videoId, title) {
@@ -298,13 +365,11 @@
     }
 
     function updateCrossfader(val) {
-      // Mezcla de Audio
       const factorA = (100 - val) / 50;
       const factorB = val / 50;
       if (playerA && playerA.setVolume) playerA.setVolume(Math.min(100, 100 * factorA));
       if (playerB && playerB.setVolume) playerB.setVolume(Math.min(100, 100 * factorB));
 
-      // Mezcla de Video enviada a la pantalla de TV
       ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
     }
 
