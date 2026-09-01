@@ -16,7 +16,7 @@ app.get('/api/search', async (req, res) => {
   if (!query) return res.json([]);
   try {
     const r = await yts(query + ' karaoke');
-    const videos = r.videos.slice(0, 12);
+    const videos = r.videos.slice(0, 25);
     const formatted = videos.map(v => ({
       videoId: v.videoId,
       title: v.title,
