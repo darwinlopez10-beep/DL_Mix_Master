@@ -19,28 +19,8 @@
       background: radial-gradient(circle, #1a2332 0%, #0d0f12 100%);
       padding: 20px;
     }
-    #standby h1 { font-size: 42px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
-    #standby p { font-size: 18px; color: #8a94a6; margin-bottom: 20px; }
-
-    .cast-container {
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    google-cast-launcher {
-      width: 56px;
-      height: 56px;
-      cursor: pointer;
-      background-color: #00b0ff;
-      border-radius: 50%;
-      padding: 10px;
-      box-shadow: 0 4px 15px rgba(0, 176, 255, 0.4);
-    }
-
-    .info-text { font-size: 14px; color: #38bdf8; }
+    #standby h1 { font-size: 48px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
+    #standby p { font-size: 20px; color: #8a94a6; }
 
     #player-container { width: 100vw; height: 100vh; display: none; background: #000; }
     #player { width: 100%; height: 100%; pointer-events: none; }
@@ -51,31 +31,16 @@
   <div id="standby">
     <h1>DL MIX-MASTER</h1>
     <p>Conectado. Busca una canción desde tu teléfono para iniciar la rumba.</p>
-    
-    <div class="cast-container">
-      <p class="info-text">Vincula tu Smart TV presionando el botón azul:</p>
-      <google-cast-launcher></google-cast-launcher>
-    </div>
   </div>
 
   <div id="player-container">
     <div id="player"></div>
   </div>
 
-  <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let player;
     let ws;
-
-    window.__onGCastApiAvailable = function(isAvailable) {
-      if (isAvailable) {
-        cast.framework.CastContext.getInstance().setOptions({
-          receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-          autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-        });
-      }
-    };
 
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
@@ -111,15 +76,11 @@
         if (data.type === 'yt_play') {
           document.getElementById('standby').style.display = 'none';
           document.getElementById('player-container').style.display = 'block';
-          
-          if (player && player.loadVideoById) {
-            player.loadVideoById(data.videoId);
-            player.playVideo();
-          }
+          player.loadVideoById(data.videoId);
+          player.playVideo();
         }
 
         if (data.type === 'yt_control') {
-          if (!player) return;
           if (data.action === 'play') player.playVideo();
           if (data.action === 'pause') player.pauseVideo();
           if (data.action === 'stop') {
