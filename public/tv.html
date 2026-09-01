@@ -5,65 +5,92 @@
   <title>DL Mix-Master - Salida TV Video</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html { width: 100%; height: 100%; background: #000; overflow: hidden; cursor: pointer; font-family: sans-serif; }
+    body, html { width: 100%; height: 100%; background: #000; overflow: hidden; cursor: pointer; }
     
     .video-container { position: relative; width: 100vw; height: 100vh; }
     
     .screen {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      border: none; transition: opacity 0.15s ease-in-out;
+      border: none; transition: opacity 0.15s ease-in-out; pointer-events: none;
     }
     #screen-a { z-index: 1; opacity: 1; }
     #screen-b { z-index: 2; opacity: 0; }
 
-    .hint {
-      position: absolute; bottom: 20px; right: 20px; z-index: 10;
-      background: rgba(0,0,0,0.7); color: #ff6b00; padding: 8px 14px;
-      border-radius: 6px; font-size: 12px; font-weight: bold; border: 1px solid #ff6b00;
-      pointer-events: none; opacity: 0.8; transition: opacity 2s;
+    #start-overlay {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.9); z-index: 100; display: flex;
+      flex-direction: column; justify-content: center; align-items: center;
+      color: #ff6b00; font-family: sans-serif; cursor: pointer;
     }
   </style>
 </head>
-<body onclick="toggleFullscreen()">
+<body>
+
+  <div id="start-overlay" onclick="initTV()">
+    <h2 style="font-size:24px; margin-bottom:10px;">📺 HABILITAR PANTALLA TV</h2>
+    <p style="color:#fff; font-size:14px;">Haz clic aquí para permitir la transmisión y poner en Pantalla Completa</p>
+  </div>
 
   <div class="video-container">
     <div id="screen-a" class="screen"></div>
     <div id="screen-b" class="screen"></div>
   </div>
 
-  <div class="hint" id="hintBox">📺 Toca para Pantalla Completa</div>
-
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
     let playerA, playerB;
-    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    let readyA = false, readyB = false;
+    let ws;
 
     function onYouTubeIframeAPIReady() {
-      playerA = new YT.Player('screen-a', { height: '100%', width: '100%', playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1 } });
-      playerB = new YT.Player('screen-b', { height: '100%', width: '100%', playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1 } });
+      playerA = new YT.Player('screen-a', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'enablejsapi': 1, 'origin': window.location.origin },
+        events: { 'onReady': () => { readyA = true; } }
+      });
+      playerB = new YT.Player('screen-b', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 1, 'controls': 0, 'modestbranding': 1, 'enablejsapi': 1, 'origin': window.location.origin },
+        events: { 'onReady': () => { readyB = true; } }
+      });
     }
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'yt_play') {
-          if (data.deck === 'A' && playerA && playerA.loadVideoById) playerA.loadVideoById(data.videoId);
-          if (data.deck === 'B' && playerB && playerB.loadVideoById) playerB.loadVideoById(data.videoId);
-        }
-        if (data.type === 'crossfade_video') {
-          const opacityB = data.value / 100;
-          document.getElementById('screen-b').style.opacity = opacityB;
-        }
-      } catch(e) {}
-    };
+    function initWS() {
+      ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'yt_play') {
+            if (data.deck === 'A' && playerA && readyA) {
+              playerA.loadVideoById({ videoId: data.videoId });
+              playerA.playVideo();
+            }
+            if (data.deck === 'B' && playerB && readyB) {
+              playerB.loadVideoById({ videoId: data.videoId });
+              playerB.playVideo();
+            }
+          }
 
-    function toggleFullscreen() {
+          if (data.type === 'crossfade_video') {
+            const opacityB = data.value / 100;
+            document.getElementById('screen-b').style.opacity = opacityB;
+          }
+        } catch(e) {
+          console.error("Error procesando mensaje WebSocket:", e);
+        }
+      };
+
+      ws.onclose = () => { setTimeout(initWS, 2000); };
+    }
+
+    function initTV() {
+      document.getElementById('start-overlay').style.display = 'none';
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-        document.getElementById('hintBox').style.opacity = '0';
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen();
+        document.documentElement.requestFullscreen().catch(() => {});
       }
+      initWS();
     }
   </script>
 </body>
