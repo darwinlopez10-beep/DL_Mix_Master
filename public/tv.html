@@ -6,7 +6,7 @@
   <title>DL Mix-Master - TV Player</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: sans-serif; cursor: none; }
+    body, html { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: sans-serif; }
     
     #standby {
       display: flex;
@@ -17,9 +17,26 @@
       color: #00e676;
       text-align: center;
       background: radial-gradient(circle, #1a2332 0%, #0d0f12 100%);
+      padding: 20px;
     }
-    #standby h1 { font-size: 48px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
-    #standby p { font-size: 20px; color: #8a94a6; }
+    #standby h1 { font-size: 42px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; }
+    #standby p { font-size: 18px; color: #8a94a6; margin-bottom: 20px; }
+
+    .cast-btn {
+      background: #00b0ff;
+      color: #000;
+      border: none;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0, 176, 255, 0.3);
+    }
+    .cast-btn:hover { background: #38bdf8; }
 
     #player-container { width: 100vw; height: 100vh; display: none; background: #000; }
     #player { width: 100%; height: 100%; pointer-events: none; }
@@ -30,6 +47,11 @@
   <div id="standby">
     <h1>DL MIX-MASTER</h1>
     <p>Conectado. Busca una canción desde tu teléfono para iniciar la rumba.</p>
+    
+    <!-- BOTÓN DE TRANSMISIÓN A SmartTV / MIRACAST / CHROMECAST -->
+    <button class="cast-btn" onclick="startCasting()">
+      📺 Transmitir Pantalla / TV Inalámbrico
+    </button>
   </div>
 
   <div id="player-container">
@@ -64,6 +86,20 @@
 
     function onPlayerReady(event) {
       connectWS();
+    }
+
+    // Función para activar el selector de pantallas en Linux
+    async function startCasting() {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'DL Mix-Master TV', url: window.location.href });
+        } catch (e) {}
+      } else if (window.chrome && window.chrome.cast) {
+        // En Chrome Linux abre el menú de Cast nativo
+        window.print(); 
+      } else {
+        alert("Instrucción en Linux:\nHaz clic derecho en la página > Selecciona 'Transmitir...' o 'Cast' para conectar tu Smart TV por Wi-Fi.");
+      }
     }
 
     function connectWS() {
