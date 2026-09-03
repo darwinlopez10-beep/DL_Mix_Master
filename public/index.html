@@ -59,8 +59,9 @@
 
     .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
     .pad-btn {
-      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 5px 0; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
+      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
     }
+    .pad-btn:active { background: var(--orange-accent); color: #000; }
 
     .transport-row { display: flex; gap: 4px; }
     .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
@@ -149,12 +150,16 @@
         <input type="range" id="seek-a" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('A', this.value)">
       </div>
 
+      <!-- HOT CUES ACTIVOS -->
       <div class="pads-grid">
-        <div class="pad-btn">HOT 1</div><div class="pad-btn">HOT 2</div><div class="pad-btn">HOT 3</div><div class="pad-btn">HOT 4</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 0)">HOT 1 (0%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 25)">HOT 2 (25%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 50)">HOT 3 (50%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 75)">HOT 4 (75%)</div>
       </div>
 
       <div class="transport-row">
-        <button class="t-btn sync">SYNC</button>
+        <button class="t-btn sync" onclick="syncDecks('A')">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
         <button class="t-btn play" id="btn-play-a" onclick="controlDeck('A', 'toggle')">PLAY ▶</button>
       </div>
@@ -174,12 +179,12 @@
       </div>
 
       <div class="eq-grid">
-        <div class="knob-unit"><span>HIGH A</span><input type="range" value="50"></div>
-        <div class="knob-unit"><span>HIGH B</span><input type="range" value="50"></div>
-        <div class="knob-unit"><span>MID A</span><input type="range" value="50"></div>
-        <div class="knob-unit"><span>MID B</span><input type="range" value="50"></div>
-        <div class="knob-unit"><span>LOW A</span><input type="range" value="50"></div>
-        <div class="knob-unit"><span>LOW B</span><input type="range" value="50"></div>
+        <div class="knob-unit"><span>HIGH A</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>HIGH B</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" min="0" max="100" value="50"></div>
       </div>
 
       <div class="clean-crossfader-box">
@@ -207,12 +212,16 @@
         <input type="range" id="seek-b" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('B', this.value)">
       </div>
 
+      <!-- HOT CUES ACTIVOS -->
       <div class="pads-grid">
-        <div class="pad-btn">HOT 1</div><div class="pad-btn">HOT 2</div><div class="pad-btn">HOT 3</div><div class="pad-btn">HOT 4</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 0)">HOT 1 (0%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 25)">HOT 2 (25%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 50)">HOT 3 (50%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 75)">HOT 4 (75%)</div>
       </div>
 
       <div class="transport-row">
-        <button class="t-btn sync">SYNC</button>
+        <button class="t-btn sync" onclick="syncDecks('B')">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
         <button class="t-btn play" id="btn-play-b" onclick="controlDeck('B', 'toggle')">PLAY ▶</button>
       </div>
@@ -271,7 +280,6 @@
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       if (targetPlayer && targetPlayer.cueVideoById) {
-        // cueVideoById carga el video y lo deja PAUSADO listo para PLAY
         targetPlayer.cueVideoById(videoId);
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
@@ -297,6 +305,22 @@
         p.pauseVideo();
         p.seekTo(0);
         btn.innerText = 'PLAY ▶';
+      }
+    }
+
+    function triggerHotCue(deck, percent) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && p.getDuration) {
+        const dur = p.getDuration();
+        p.seekTo((percent / 100) * dur, true);
+      }
+    }
+
+    function syncDecks(targetDeck) {
+      const source = (targetDeck === 'A') ? playerB : playerA;
+      const target = (targetDeck === 'A') ? playerA : playerB;
+      if (source && target && source.getCurrentTime) {
+        target.seekTo(source.getCurrentTime(), true);
       }
     }
 
