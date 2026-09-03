@@ -13,6 +13,7 @@
       --orange-accent: #ff6b00;
       --cyan-accent: #00d4ff;
       --green-accent: #00e676;
+      --red-accent: #ff1744;
       --text-bright: #ffffff;
       --text-sub: #8c9ba5;
       --border-color: #2a3346;
@@ -108,6 +109,9 @@
     .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
     .song-row:hover { background: #161c28; }
+
+    .history-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #131822; border-bottom: 1px solid var(--border-color); }
+    .btn-clear-history { background: var(--red-accent); color: #fff; border: none; padding: 4px 10px; border-radius: 3px; font-weight: bold; font-size: 10px; cursor: pointer; }
 
     #qr-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -253,7 +257,7 @@
     <div class="browser-panel">
       <div class="tree-sidebar">
         <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Karaoke Pistas</div>
-        <div class="tree-node" id="tab-historial" onclick="showHistory()">🕒 Historial</div>
+        <div class="tree-node" id="tab-historial" onclick="switchTab('historial')">🕒 Historial</div>
       </div>
 
       <div class="search-content">
@@ -328,11 +332,12 @@
       }
     }
 
-    // Usar cueVideoById para que la cargue PAUSADA en el Deck en vez de sonar de una vez
+    // CARGAR CUE/PAUSA AUTOMÁTICA
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
         targetPlayer.cueVideoById(videoId);
+        targetPlayer.pauseVideo(); // Asegurar pausa total al preparar
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
       }
@@ -397,6 +402,21 @@
       }
     }
 
+    function switchTab(tab) {
+      document.getElementById('tab-pistas').classList.remove('active');
+      document.getElementById('tab-historial').classList.remove('active');
+      
+      if (tab === 'pistas') {
+        document.getElementById('tab-pistas').classList.add('active');
+        document.getElementById('searchBarGroup').style.display = 'flex';
+        renderResultsList();
+      } else if (tab === 'historial') {
+        document.getElementById('tab-historial').classList.add('active');
+        document.getElementById('searchBarGroup').style.display = 'none';
+        showHistory();
+      }
+    }
+
     async function doSearch() {
       const q = document.getElementById('searchInput').value;
       if (!q) return;
@@ -415,6 +435,10 @@
     function renderResultsList() {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
+      if (currentSongsList.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">Ingresa el nombre del cantante o canción para buscar pistas.</div>';
+        return;
+      }
       currentSongsList.forEach((song, idx) => {
         const row = document.createElement('div');
         row.className = 'song-row';
@@ -438,7 +462,7 @@
     function saveToHistory(title, videoId) {
       const item = { title, videoId, date: new Date().toLocaleTimeString() };
       songHistory.unshift(item);
-      if (songHistory.length > 30) songHistory.pop();
+      if (songHistory.length > 50) songHistory.pop();
       localStorage.setItem('dl_history', JSON.stringify(songHistory));
     }
 
@@ -449,7 +473,13 @@
         return;
       }
 
-      list.innerHTML = '';
+      list.innerHTML = `
+        <div class="history-header">
+          <span style="font-size:11px; font-weight:bold; color:var(--text-sub)">Canciones reproducidas previamente</span>
+          <button class="btn-clear-history" onclick="clearHistory()">🗑️ BORRAR HISTORIAL</button>
+        </div>
+      `;
+
       songHistory.forEach((song) => {
         const row = document.createElement('div');
         row.className = 'song-row';
@@ -462,6 +492,14 @@
         `;
         list.appendChild(row);
       });
+    }
+
+    function clearHistory() {
+      if (confirm('¿Estás seguro de borrar todo el historial?')) {
+        songHistory = [];
+        localStorage.removeItem('dl_history');
+        showHistory();
+      }
     }
 
     function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
