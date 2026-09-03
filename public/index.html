@@ -191,7 +191,6 @@
         </div>
       </div>
 
-      <!-- EQUALIZADORES CON EVENTOS VINCULADOS -->
       <div class="eq-grid">
         <div class="knob-unit"><span>HIGH A</span><input type="range" id="eq-high-a" min="0" max="100" value="50" oninput="adjustEQ('A', 'high', this.value)"></div>
         <div class="knob-unit"><span>HIGH B</span><input type="range" id="eq-high-b" min="0" max="100" value="50" oninput="adjustEQ('B', 'high', this.value)"></div>
@@ -277,37 +276,36 @@
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
 
-    // Variables de control de estado para evitar reproducciones automáticas no deseadas
-    let shouldAutoPlayA = false;
-    let shouldAutoPlayB = false;
+    // Banderas estrictas de control de reproducción
+    let isPlayingA = false;
+    let isPlayingB = false;
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
         playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 },
-        events: {
-          'onStateChange': (e) => handlePlayerStateChange('A', e)
-        }
+        events: { 'onStateChange': (e) => handlePlayerStateChange('A', e) }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
         playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 },
-        events: {
-          'onStateChange': (e) => handlePlayerStateChange('B', e)
-        }
+        events: { 'onStateChange': (e) => handlePlayerStateChange('B', e) }
       });
 
       setInterval(updateTimers, 500);
     }
 
     function handlePlayerStateChange(deck, event) {
-      const isPlayAllowed = (deck === 'A') ? shouldAutoPlayA : shouldAutoPlayB;
+      const isAllowed = (deck === 'A') ? isPlayingA : isPlayingB;
+      const player = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
 
-      // Si YouTube intenta reproducir la canción recién cargada sin que hayamos presionado PLAY
-      if (event.data === YT.PlayerState.PLAYING && !isPlayAllowed) {
-        const player = (deck === 'A') ? playerA : playerB;
-        if (player && player.pauseVideo) player.pauseVideo();
+      // Si intenta reproducir sin permiso previo (Auto-play bloqueado)
+      if (event.data === YT.PlayerState.PLAYING && !isAllowed) {
+        if (player && typeof player.pauseVideo === 'function') {
+          player.pauseVideo();
+          player.seekTo(0, true);
+        }
         if (btn) btn.innerText = 'PLAY ▶';
       }
     }
@@ -350,18 +348,33 @@
       }
     }
 
-    // CARGA MANUAL FORZANDO ESTADO PAUSADO
+    // CARGA DE CANCIÓN CON PAUSA FORZADA DE TRIPLE CAPA
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
 
-      if (deck === 'A') shouldAutoPlayA = false;
-      if (deck === 'B') shouldAutoPlayB = false;
+      if (deck === 'A') isPlayingA = false;
+      if (deck === 'B') isPlayingB = false;
 
       if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
+        // Cargar montado en cola
         targetPlayer.cueVideoById(videoId);
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         if (btn) btn.innerText = 'PLAY ▶';
+
+        // Bucle supervisor de 1.5s para asegurar que permanezca frenado
+        let checkCount = 0;
+        const intervalGuard = setInterval(() => {
+          checkCount++;
+          if (typeof targetPlayer.getPlayerState === 'function') {
+            const state = targetPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+              targetPlayer.pauseVideo();
+              targetPlayer.seekTo(0, true);
+            }
+          }
+          if (checkCount >= 15) clearInterval(intervalGuard);
+        }, 100);
       }
       saveToHistory(title, videoId);
     }
@@ -374,33 +387,30 @@
       if (action === 'toggle') {
         const state = p.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
-          if (deck === 'A') shouldAutoPlayA = false;
-          if (deck === 'B') shouldAutoPlayB = false;
+          if (deck === 'A') isPlayingA = false;
+          if (deck === 'B') isPlayingB = false;
           p.pauseVideo();
           btn.innerText = 'PLAY ▶';
         } else {
-          if (deck === 'A') shouldAutoPlayA = true;
-          if (deck === 'B') shouldAutoPlayB = true;
+          if (deck === 'A') isPlayingA = true;
+          if (deck === 'B') isPlayingB = true;
           p.playVideo();
           btn.innerText = 'PAUSE ❚❚';
         }
       } else if (action === 'cue') {
-        if (deck === 'A') shouldAutoPlayA = false;
-        if (deck === 'B') shouldAutoPlayB = false;
+        if (deck === 'A') isPlayingA = false;
+        if (deck === 'B') isPlayingB = false;
         p.pauseVideo();
-        p.seekTo(0);
+        p.seekTo(0, true);
         btn.innerText = 'PLAY ▶';
       }
     }
 
-    // AJUSTE EQ EN TIEMPO REAL (Mid/Voz, Low/Bass, High)
     function adjustEQ(deck, type, value) {
       const p = (deck === 'A') ? playerA : playerB;
       if (!p) return;
-      // Ajuste conceptual de ganancia por simulación de ecualizador
       const volBase = parseInt(document.getElementById(deck === 'A' ? 'vol-a' : 'vol-b').value);
       const factor = parseInt(value) / 50; 
-      // Si el usuario sube o baja los rangos de frecuencia
       if (typeof p.setVolume === 'function') {
         const adjustedVol = Math.min(100, Math.max(0, Math.round(volBase * ((factor * 0.4) + 0.6))));
         p.setVolume(adjustedVol);
