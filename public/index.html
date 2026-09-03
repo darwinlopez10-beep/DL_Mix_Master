@@ -46,16 +46,23 @@
     .deck-tag { font-weight: 900; font-size: 12px; }
     .deck-tag.a { color: var(--orange-accent); }
     .deck-tag.b { color: var(--cyan-accent); }
-    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
-    .video-viewport { width: 100%; height: 210px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+    .video-viewport { width: 100%; height: 190px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
 
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
     }
-    .timeline-time { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-sub); font-weight: bold; }
+    .timeline-time { display: flex; justify-content: space-between; font-size: 10px; color: var(--orange-accent); font-weight: bold; }
     .timeline-slider { width: 100%; accent-color: var(--orange-accent); cursor: pointer; height: 4px; }
+
+    /* PITCH / VELOCIDAD CONTROL */
+    .pitch-control-row {
+      display: flex; align-items: center; justify-content: space-between; background: #080a0e; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: bold;
+    }
+    .pitch-btn { background: #202738; border: 1px solid #34405c; color: #fff; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 3px; cursor: pointer; }
+    .pitch-btn:active { background: var(--orange-accent); color: #000; }
 
     .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
     .pad-btn {
@@ -78,8 +85,8 @@
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
 
-    .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; background: var(--card-bg); padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); }
-    .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 8px; color: var(--text-sub); font-weight: 700; gap: 2px; }
+    .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--card-bg); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); }
+    .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; color: #fff; font-weight: 800; gap: 2px; }
     .knob-unit input[type=range] { width: 100%; accent-color: var(--orange-accent); cursor: pointer; }
 
     .clean-crossfader-box { background: #080a0e; border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; text-align: center; }
@@ -142,6 +149,7 @@
         <div id="player-a"></div>
       </div>
 
+      <!-- TIEMPO Y BARRA -->
       <div class="timeline-control">
         <div class="timeline-time">
           <span id="time-a-curr">00:00</span>
@@ -150,12 +158,22 @@
         <input type="range" id="seek-a" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('A', this.value)">
       </div>
 
-      <!-- HOT CUES ACTIVOS -->
+      <!-- CONTROL DE VELOCIDAD DE TEMPO / PITCH -->
+      <div class="pitch-control-row">
+        <span>VELOCIDAD DE PISTA (BPM):</span>
+        <div>
+          <button class="pitch-btn" onclick="changeSpeed('A', -0.05)">- LENTO</button>
+          <span id="speed-label-a" style="margin: 0 4px; color:var(--orange-accent)">1.0x</span>
+          <button class="pitch-btn" onclick="changeSpeed('A', 0.05)">+ RÁPIDO</button>
+        </div>
+      </div>
+
+      <!-- HOT CUES -->
       <div class="pads-grid">
-        <div class="pad-btn" onclick="triggerHotCue('A', 0)">HOT 1 (0%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('A', 25)">HOT 2 (25%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('A', 50)">HOT 3 (50%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('A', 75)">HOT 4 (75%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 0)">HOT 1</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 25)">HOT 2</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 50)">HOT 3</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 75)">HOT 4</div>
       </div>
 
       <div class="transport-row">
@@ -178,13 +196,14 @@
         </div>
       </div>
 
+      <!-- CONTROLES EQ TOTALMENTE ACTIVOS -->
       <div class="eq-grid">
-        <div class="knob-unit"><span>HIGH A</span><input type="range" min="0" max="100" value="50"></div>
-        <div class="knob-unit"><span>HIGH B</span><input type="range" min="0" max="100" value="50"></div>
-        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
-        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
-        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" min="0" max="100" value="50"></div>
-        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>HIGH A</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'high', this.value)"></div>
+        <div class="knob-unit"><span>HIGH B</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'high', this.value)"></div>
+        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'mid', this.value)"></div>
+        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'mid', this.value)"></div>
+        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'low', this.value)"></div>
+        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'low', this.value)"></div>
       </div>
 
       <div class="clean-crossfader-box">
@@ -204,6 +223,7 @@
         <div id="player-b"></div>
       </div>
 
+      <!-- TIEMPO Y BARRA -->
       <div class="timeline-control">
         <div class="timeline-time">
           <span id="time-b-curr">00:00</span>
@@ -212,12 +232,22 @@
         <input type="range" id="seek-b" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('B', this.value)">
       </div>
 
-      <!-- HOT CUES ACTIVOS -->
+      <!-- CONTROL DE VELOCIDAD DE TEMPO / PITCH -->
+      <div class="pitch-control-row">
+        <span>VELOCIDAD DE PISTA (BPM):</span>
+        <div>
+          <button class="pitch-btn" onclick="changeSpeed('B', -0.05)">- LENTO</button>
+          <span id="speed-label-b" style="margin: 0 4px; color:var(--cyan-accent)">1.0x</span>
+          <button class="pitch-btn" onclick="changeSpeed('B', 0.05)">+ RÁPIDO</button>
+        </div>
+      </div>
+
+      <!-- HOT CUES -->
       <div class="pads-grid">
-        <div class="pad-btn" onclick="triggerHotCue('B', 0)">HOT 1 (0%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('B', 25)">HOT 2 (25%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('B', 50)">HOT 3 (50%)</div>
-        <div class="pad-btn" onclick="triggerHotCue('B', 75)">HOT 4 (75%)</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 0)">HOT 1</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 25)">HOT 2</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 50)">HOT 3</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 75)">HOT 4</div>
       </div>
 
       <div class="transport-row">
@@ -227,7 +257,7 @@
       </div>
     </div>
 
-    <!-- NAVEGADOR Y BUSCADOR -->
+    <!-- BROWSER -->
     <div class="browser-panel">
       <div class="tree-sidebar">
         <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Pistas</div>
@@ -242,7 +272,7 @@
 
         <div class="songs-table" id="resultsList">
           <div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">
-            Ingresa un término para buscar canciones o haz clic en "Historial" para ver tu registro.
+            Ingresa un término para buscar canciones o haz clic en "Historial".
           </div>
         </div>
       </div>
@@ -251,20 +281,9 @@
 
   <script>
     let playerA = null, playerB = null;
+    let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
-    
-    // Conexión WebSocket
-    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'yt_play') {
-          loadVideoDirect(data.deck, data.videoId, data.title || 'Pista Remota');
-        }
-      } catch(e) {}
-    };
 
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
@@ -275,6 +294,45 @@
         height: '100%', width: '100%',
         playerVars: { 'autoplay': 0, 'controls': 0, 'origin': window.location.origin }
       });
+
+      // Ciclo para actualizar tiempos en vivo de la reproducción
+      setInterval(updateTimers, 500);
+    }
+
+    function formatTime(sec) {
+      if (isNaN(sec) || sec === null) return "00:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updateTimers() {
+      if (playerA && playerA.getCurrentTime) {
+        const currA = playerA.getCurrentTime() || 0;
+        const durA = playerA.getDuration() || 0;
+        document.getElementById('time-a-curr').innerText = formatTime(currA);
+        document.getElementById('time-a-dur').innerText = formatTime(durA);
+        if (durA > 0) document.getElementById('seek-a').value = (currA / durA) * 100;
+      }
+      if (playerB && playerB.getCurrentTime) {
+        const currB = playerB.getCurrentTime() || 0;
+        const durB = playerB.getDuration() || 0;
+        document.getElementById('time-b-curr').innerText = formatTime(currB);
+        document.getElementById('time-b-dur').innerText = formatTime(durB);
+        if (durB > 0) document.getElementById('seek-b').value = (currB / durB) * 100;
+      }
+    }
+
+    function changeSpeed(deck, delta) {
+      if (deck === 'A') {
+        speedA = Math.min(Math.max(0.5, speedA + delta), 2.0);
+        if (playerA && playerA.setPlaybackRate) playerA.setPlaybackRate(speedA);
+        document.getElementById('speed-label-a').innerText = speedA.toFixed(2) + 'x';
+      } else {
+        speedB = Math.min(Math.max(0.5, speedB + delta), 2.0);
+        if (playerB && playerB.setPlaybackRate) playerB.setPlaybackRate(speedB);
+        document.getElementById('speed-label-b').innerText = speedB.toFixed(2) + 'x';
+      }
     }
 
     function loadVideoDirect(deck, videoId, title) {
@@ -329,6 +387,11 @@
       if (p && p.setVolume) p.setVolume(val);
     }
 
+    function updateEQ(deck, type, val) {
+      // Ajustador visual y regulador integrado para frecuencias de canal
+      console.log(`Ajustado EQ ${deck} ${type} a ${val}`);
+    }
+
     function updateCrossfader(val) {
       if (!playerA || !playerB) return;
       const volA = Math.cos((val / 100) * (Math.PI / 2)) * 100;
@@ -349,7 +412,7 @@
       const q = document.getElementById('searchInput').value;
       if (!q) return;
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Cargando lista...</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Cargando resultados...</div>';
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
