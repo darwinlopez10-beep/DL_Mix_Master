@@ -44,9 +44,13 @@
     .deck-top-info {
       display: flex; justify-content: space-between; align-items: center; background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
-    .deck-tag { font-weight: 900; font-size: 12px; }
+    .deck-tag { font-weight: 900; font-size: 12px; display: flex; align-items: center; gap: 6px; }
     .deck-tag.a { color: var(--orange-accent); }
     .deck-tag.b { color: var(--cyan-accent); }
+    
+    .status-led { width: 8px; height: 8px; border-radius: 50%; background: var(--red-accent); display: inline-block; box-shadow: 0 0 6px var(--red-accent); }
+    .status-led.active { background: var(--green-accent); box-shadow: 0 0 6px var(--green-accent); }
+
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     .video-viewport { width: 100%; height: 190px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
@@ -80,7 +84,7 @@
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -102,8 +106,9 @@
     .tree-node.active { background: #1f2636; color: var(--orange-accent); font-weight: bold; }
 
     .search-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-    .search-input-group { display: flex; gap: 6px; }
-    .search-input-group input { flex: 1; padding: 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
+    .search-input-group { display: flex; gap: 6px; position: relative; }
+    .search-input-group input { flex: 1; padding: 8px 30px 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
+    .clear-btn { position: absolute; right: 140px; top: 50%; transform: translateY(-50%); color: var(--text-sub); cursor: pointer; font-weight: bold; font-size: 12px; }
     .search-input-group button { padding: 8px 16px; background: var(--orange-accent); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
 
     .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
@@ -141,7 +146,7 @@
     <!-- DECK A -->
     <div class="deck-panel">
       <div class="deck-top-info">
-        <span class="deck-tag a">DECK A</span>
+        <span class="deck-tag a"><span id="led-a" class="status-led"></span> DECK A</span>
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
@@ -211,7 +216,7 @@
     <!-- DECK B -->
     <div class="deck-panel">
       <div class="deck-top-info">
-        <span class="deck-tag b">DECK B</span>
+        <span class="deck-tag b"><span id="led-b" class="status-led"></span> DECK B</span>
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
@@ -260,6 +265,7 @@
       <div class="search-content">
         <div class="search-input-group" id="searchBarGroup">
           <input type="text" id="searchInput" placeholder="Nombre de la canción o artista..." onkeydown="if(event.key==='Enter') doSearch()">
+          <span class="clear-btn" onclick="clearSearch()">✖</span>
           <button onclick="doSearch()">BUSCAR KARAOKE</button>
         </div>
 
@@ -274,7 +280,7 @@
 
   <script>
     let playerA = null, playerB = null;
-    let isUserPlayA = false, isUserPlayB = false; // Bandera de control
+    let isUserPlayA = false, isUserPlayB = false;
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
@@ -324,19 +330,20 @@
         width: '100%',
         videoId: videoId,
         playerVars: {
-          'autoplay': 1, // Forzamos carga inicial rápida
+          'autoplay': 1,
           'controls': 0,
           'rel': 0,
           'enablejsapi': 1
         },
         events: {
           'onReady': (e) => {
-            const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
-            e.target.setVolume(currentVol);
+            // SILENCIADOR EN CARGA: Muteamos completamente antes de frenar
+            e.target.mute();
+            e.target.pauseVideo();
+            e.target.seekTo(0, true);
             setTransportState(deck, 'cue');
           },
           'onStateChange': (e) => {
-            // DETECCIÓN ESTRICTA: Si intenta sonar pero el usuario NO ha dado PLAY, frenar de inmediato
             if (e.data === YT.PlayerState.PLAYING) {
               const userStarted = isA ? isUserPlayA : isUserPlayB;
               if (!userStarted) {
@@ -355,7 +362,6 @@
       saveToHistory(title, videoId);
     }
 
-    // BOTÓN PLAY: Habilita el permiso de reproducción e inicia el video
     function pressPlay(deck) {
       const isA = (deck === 'A');
       const p = isA ? playerA : playerB;
@@ -364,11 +370,15 @@
       if (isA) isUserPlayA = true;
       else isUserPlayB = true;
 
+      // DESMUTEAR Y ESTABLECER VOLUMEN REAL AL DAR PLAY
+      p.unMute();
+      const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+      p.setVolume(currentVol);
+
       p.playVideo();
       setTransportState(deck, 'play');
     }
 
-    // BOTÓN CUE: Detiene, congela en 0 y quita la bandera
     function pressCue(deck) {
       const isA = (deck === 'A');
       const p = isA ? playerA : playerB;
@@ -379,20 +389,29 @@
 
       p.pauseVideo();
       p.seekTo(0, true);
+      p.mute(); // Mute preventivo al presionar CUE
       setTransportState(deck, 'cue');
     }
 
     function setTransportState(deck, activeState) {
       const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
       const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
+      const led = document.getElementById(deck === 'A' ? 'led-a' : 'led-b');
 
       if (activeState === 'play') {
         btnPlay.classList.add('active');
         btnCue.classList.remove('active');
+        led.classList.add('active');
       } else {
         btnCue.classList.add('active');
         btnPlay.classList.remove('active');
+        led.classList.remove('active');
       }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchInput').focus();
     }
 
     function changeSpeed(deck, delta) {
