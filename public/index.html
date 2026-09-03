@@ -293,10 +293,13 @@
       setInterval(updateTimers, 500);
     }
 
-    // BLOQUEO ABSOLUTO
+    // INTERCEPTOR SILENCIADOR ABSOLUTO
     function handleStateChange(deck, event) {
       const allowed = (deck === 'A') ? isPlayingA : isPlayingB;
+      
+      // Si entra a sonar pero NO se ha ordenado PLAY
       if (event.data === YT.PlayerState.PLAYING && !allowed) {
+        event.target.mute();
         event.target.pauseVideo();
         event.target.seekTo(0, true);
       }
@@ -340,7 +343,7 @@
       }
     }
 
-    // CARGA DE CANCIÓN CON CORTE INMEDIATO
+    // CARGA CON MUTEO PREVENTIVO HASTA ORDEN DE PLAY
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
@@ -349,23 +352,22 @@
       if (deck === 'B') isPlayingB = false;
 
       if (targetPlayer) {
-        if (typeof targetPlayer.loadVideoById === 'function') {
-          targetPlayer.loadVideoById(videoId);
-        } else if (typeof targetPlayer.cueVideoById === 'function') {
+        // Silenciamos de inmediato antes de cargar
+        if (targetPlayer.mute) targetPlayer.mute();
+        
+        if (typeof targetPlayer.cueVideoById === 'function') {
           targetPlayer.cueVideoById(videoId);
         }
 
-        // Cortamos la reproducción al instante
+        // Bucle agresivo de freno y congelación en 00:00
+        let checkCount = 0;
         const killInterval = setInterval(() => {
+          checkCount++;
           if (targetPlayer.pauseVideo) targetPlayer.pauseVideo();
           if (targetPlayer.seekTo) targetPlayer.seekTo(0, true);
-        }, 50);
-
-        setTimeout(() => {
-          clearInterval(killInterval);
-          if (targetPlayer.pauseVideo) targetPlayer.pauseVideo();
-          if (targetPlayer.seekTo) targetPlayer.seekTo(0, true);
-        }, 600);
+          
+          if (checkCount > 15) clearInterval(killInterval);
+        }, 100);
 
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         if (btn) btn.innerText = 'PLAY ▶';
@@ -389,6 +391,9 @@
         } else {
           if (deck === 'A') isPlayingA = true;
           if (deck === 'B') isPlayingB = true;
+          
+          // Activamos sonido al dar PLAY
+          if (p.unMute) p.unMute();
           p.playVideo();
           btn.innerText = 'PAUSE ❚❚';
         }
