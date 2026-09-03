@@ -62,13 +62,11 @@
       display: flex; align-items: center; justify-content: space-between; background: #080a0e; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: bold;
     }
     .pitch-btn { background: #202738; border: 1px solid #34405c; color: #fff; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 3px; cursor: pointer; }
-    .pitch-btn:active { background: var(--orange-accent); color: #000; }
 
     .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
     .pad-btn {
       background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
     }
-    .pad-btn:active { background: var(--orange-accent); color: #000; }
 
     .transport-row { display: flex; gap: 4px; }
     .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
@@ -109,9 +107,6 @@
     .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
     .song-row:hover { background: #161c28; }
-
-    .history-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #131822; border-bottom: 1px solid var(--border-color); }
-    .btn-clear-history { background: var(--red-accent); color: #fff; border: none; padding: 4px 10px; border-radius: 3px; font-weight: bold; font-size: 10px; cursor: pointer; }
 
     #qr-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -284,11 +279,11 @@
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
       });
 
       setInterval(updateTimers, 500);
@@ -332,14 +327,20 @@
       }
     }
 
-    // CARGAR CUE/PAUSA AUTOMÁTICA
+    // CARGA MANUAL EN PAUSA FORZADA
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
+      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+
       if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
+        // Cargar montado en cola (sin auto-reproducción)
         targetPlayer.cueVideoById(videoId);
-        targetPlayer.pauseVideo(); // Asegurar pausa total al preparar
+        setTimeout(() => {
+          if (typeof targetPlayer.pauseVideo === 'function') targetPlayer.pauseVideo();
+        }, 150);
+
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
-        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
+        if (btn) btn.innerText = 'PLAY ▶';
       }
       saveToHistory(title, videoId);
     }
@@ -435,7 +436,7 @@
     function renderResultsList() {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
-      if (currentSongsList.length === 0) {
+      if (!currentSongsList || currentSongsList.length === 0) {
         list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">Ingresa el nombre del cantante o canción para buscar pistas.</div>';
         return;
       }
@@ -443,7 +444,7 @@
         const row = document.createElement('div');
         row.className = 'song-row';
         row.innerHTML = `
-          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration})</span></span>
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration || ''})</span></span>
           <div style="display:flex; gap:6px">
             <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('A', ${idx})">+ DECK A</button>
             <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('B', ${idx})">+ DECK B</button>
@@ -473,13 +474,7 @@
         return;
       }
 
-      list.innerHTML = `
-        <div class="history-header">
-          <span style="font-size:11px; font-weight:bold; color:var(--text-sub)">Canciones reproducidas previamente</span>
-          <button class="btn-clear-history" onclick="clearHistory()">🗑️ BORRAR HISTORIAL</button>
-        </div>
-      `;
-
+      list.innerHTML = '';
       songHistory.forEach((song) => {
         const row = document.createElement('div');
         row.className = 'song-row';
@@ -492,14 +487,6 @@
         `;
         list.appendChild(row);
       });
-    }
-
-    function clearHistory() {
-      if (confirm('¿Estás seguro de borrar todo el historial?')) {
-        songHistory = [];
-        localStorage.removeItem('dl_history');
-        showHistory();
-      }
     }
 
     function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
