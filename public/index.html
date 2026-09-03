@@ -57,7 +57,6 @@
     .timeline-time { display: flex; justify-content: space-between; font-size: 10px; color: var(--orange-accent); font-weight: bold; }
     .timeline-slider { width: 100%; accent-color: var(--orange-accent); cursor: pointer; height: 4px; }
 
-    /* PITCH / VELOCIDAD CONTROL */
     .pitch-control-row {
       display: flex; align-items: center; justify-content: space-between; background: #080a0e; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: bold;
     }
@@ -149,7 +148,6 @@
         <div id="player-a"></div>
       </div>
 
-      <!-- TIEMPO Y BARRA -->
       <div class="timeline-control">
         <div class="timeline-time">
           <span id="time-a-curr">00:00</span>
@@ -158,9 +156,8 @@
         <input type="range" id="seek-a" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('A', this.value)">
       </div>
 
-      <!-- CONTROL DE VELOCIDAD DE TEMPO / PITCH -->
       <div class="pitch-control-row">
-        <span>VELOCIDAD DE PISTA (BPM):</span>
+        <span>VELOCIDAD (BPM):</span>
         <div>
           <button class="pitch-btn" onclick="changeSpeed('A', -0.05)">- LENTO</button>
           <span id="speed-label-a" style="margin: 0 4px; color:var(--orange-accent)">1.0x</span>
@@ -168,7 +165,6 @@
         </div>
       </div>
 
-      <!-- HOT CUES -->
       <div class="pads-grid">
         <div class="pad-btn" onclick="triggerHotCue('A', 0)">HOT 1</div>
         <div class="pad-btn" onclick="triggerHotCue('A', 25)">HOT 2</div>
@@ -196,14 +192,13 @@
         </div>
       </div>
 
-      <!-- CONTROLES EQ TOTALMENTE ACTIVOS -->
       <div class="eq-grid">
-        <div class="knob-unit"><span>HIGH A</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'high', this.value)"></div>
-        <div class="knob-unit"><span>HIGH B</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'high', this.value)"></div>
-        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'mid', this.value)"></div>
-        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'mid', this.value)"></div>
-        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('A', 'low', this.value)"></div>
-        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" min="0" max="100" value="50" oninput="updateEQ('B', 'low', this.value)"></div>
+        <div class="knob-unit"><span>HIGH A</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>HIGH B</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" min="0" max="100" value="50"></div>
+        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" min="0" max="100" value="50"></div>
       </div>
 
       <div class="clean-crossfader-box">
@@ -223,7 +218,6 @@
         <div id="player-b"></div>
       </div>
 
-      <!-- TIEMPO Y BARRA -->
       <div class="timeline-control">
         <div class="timeline-time">
           <span id="time-b-curr">00:00</span>
@@ -232,9 +226,8 @@
         <input type="range" id="seek-b" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('B', this.value)">
       </div>
 
-      <!-- CONTROL DE VELOCIDAD DE TEMPO / PITCH -->
       <div class="pitch-control-row">
-        <span>VELOCIDAD DE PISTA (BPM):</span>
+        <span>VELOCIDAD (BPM):</span>
         <div>
           <button class="pitch-btn" onclick="changeSpeed('B', -0.05)">- LENTO</button>
           <span id="speed-label-b" style="margin: 0 4px; color:var(--cyan-accent)">1.0x</span>
@@ -242,7 +235,6 @@
         </div>
       </div>
 
-      <!-- HOT CUES -->
       <div class="pads-grid">
         <div class="pad-btn" onclick="triggerHotCue('B', 0)">HOT 1</div>
         <div class="pad-btn" onclick="triggerHotCue('B', 25)">HOT 2</div>
@@ -272,7 +264,7 @@
 
         <div class="songs-table" id="resultsList">
           <div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">
-            Ingresa un término para buscar canciones o haz clic en "Historial".
+            Ingresa un término para buscar canciones.
           </div>
         </div>
       </div>
@@ -288,14 +280,13 @@
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'origin': window.location.origin }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'origin': window.location.origin }
+        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
       });
 
-      // Ciclo para actualizar tiempos en vivo de la reproducción
       setInterval(updateTimers, 500);
     }
 
@@ -307,20 +298,22 @@
     }
 
     function updateTimers() {
-      if (playerA && playerA.getCurrentTime) {
-        const currA = playerA.getCurrentTime() || 0;
-        const durA = playerA.getDuration() || 0;
-        document.getElementById('time-a-curr').innerText = formatTime(currA);
-        document.getElementById('time-a-dur').innerText = formatTime(durA);
-        if (durA > 0) document.getElementById('seek-a').value = (currA / durA) * 100;
-      }
-      if (playerB && playerB.getCurrentTime) {
-        const currB = playerB.getCurrentTime() || 0;
-        const durB = playerB.getDuration() || 0;
-        document.getElementById('time-b-curr').innerText = formatTime(currB);
-        document.getElementById('time-b-dur').innerText = formatTime(durB);
-        if (durB > 0) document.getElementById('seek-b').value = (currB / durB) * 100;
-      }
+      try {
+        if (playerA && typeof playerA.getCurrentTime === 'function') {
+          const currA = playerA.getCurrentTime() || 0;
+          const durA = playerA.getDuration() || 0;
+          document.getElementById('time-a-curr').innerText = formatTime(currA);
+          document.getElementById('time-a-dur').innerText = formatTime(durA);
+          if (durA > 0) document.getElementById('seek-a').value = (currA / durA) * 100;
+        }
+        if (playerB && typeof playerB.getCurrentTime === 'function') {
+          const currB = playerB.getCurrentTime() || 0;
+          const durB = playerB.getDuration() || 0;
+          document.getElementById('time-b-curr').innerText = formatTime(currB);
+          document.getElementById('time-b-dur').innerText = formatTime(durB);
+          if (durB > 0) document.getElementById('seek-b').value = (currB / durB) * 100;
+        }
+      } catch(e){}
     }
 
     function changeSpeed(deck, delta) {
@@ -337,10 +330,10 @@
 
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
-      if (targetPlayer && targetPlayer.cueVideoById) {
-        targetPlayer.cueVideoById(videoId);
+      if (targetPlayer && typeof targetPlayer.loadVideoById === 'function') {
+        targetPlayer.loadVideoById(videoId);
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
-        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
+        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PAUSE ❚❚';
       }
       saveToHistory(title, videoId);
     }
@@ -348,7 +341,7 @@
     function controlDeck(deck, action) {
       const p = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-      if (!p || !p.getPlayerState) return;
+      if (!p || typeof p.getPlayerState !== 'function') return;
 
       if (action === 'toggle') {
         const state = p.getPlayerState();
@@ -368,7 +361,7 @@
 
     function triggerHotCue(deck, percent) {
       const p = (deck === 'A') ? playerA : playerB;
-      if (p && p.getDuration) {
+      if (p && typeof p.getDuration === 'function') {
         const dur = p.getDuration();
         p.seekTo((percent / 100) * dur, true);
       }
@@ -377,32 +370,27 @@
     function syncDecks(targetDeck) {
       const source = (targetDeck === 'A') ? playerB : playerA;
       const target = (targetDeck === 'A') ? playerA : playerB;
-      if (source && target && source.getCurrentTime) {
+      if (source && target && typeof source.getCurrentTime === 'function') {
         target.seekTo(source.getCurrentTime(), true);
       }
     }
 
     function setChannelVolume(deck, val) {
       const p = (deck === 'A') ? playerA : playerB;
-      if (p && p.setVolume) p.setVolume(val);
-    }
-
-    function updateEQ(deck, type, val) {
-      // Ajustador visual y regulador integrado para frecuencias de canal
-      console.log(`Ajustado EQ ${deck} ${type} a ${val}`);
+      if (p && typeof p.setVolume === 'function') p.setVolume(val);
     }
 
     function updateCrossfader(val) {
       if (!playerA || !playerB) return;
       const volA = Math.cos((val / 100) * (Math.PI / 2)) * 100;
       const volB = Math.sin((val / 100) * (Math.PI / 2)) * 100;
-      if (playerA.setVolume) playerA.setVolume(volA);
-      if (playerB.setVolume) playerB.setVolume(volB);
+      if (typeof playerA.setVolume === 'function') playerA.setVolume(volA);
+      if (typeof playerB.setVolume === 'function') playerB.setVolume(volB);
     }
 
     function seekVideo(deck, percent) {
       const p = (deck === 'A') ? playerA : playerB;
-      if (p && p.getDuration) {
+      if (p && typeof p.getDuration === 'function') {
         const dur = p.getDuration();
         p.seekTo((percent / 100) * dur, true);
       }
