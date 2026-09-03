@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DL Mix-Master Pro - Consola DJ Ultra</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     :root {
       --bg-main: #0e1117;
@@ -48,7 +49,7 @@
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     .video-viewport { width: 100%; height: 210px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
-    .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
+    .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
 
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
@@ -136,8 +137,8 @@
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport" id="viewport-a">
-        <div id="player-a-container"></div>
+      <div class="video-viewport">
+        <div id="player-a"></div>
       </div>
 
       <div class="timeline-control">
@@ -155,7 +156,7 @@
       <div class="transport-row">
         <button class="t-btn sync">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
-        <button class="t-btn play" onclick="controlDeck('A', 'play')">PLAY</button>
+        <button class="t-btn play" id="btn-play-a" onclick="controlDeck('A', 'toggle')">PLAY ▶</button>
       </div>
     </div>
 
@@ -194,8 +195,8 @@
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport" id="viewport-b">
-        <div id="player-b-container"></div>
+      <div class="video-viewport">
+        <div id="player-b"></div>
       </div>
 
       <div class="timeline-control">
@@ -213,7 +214,7 @@
       <div class="transport-row">
         <button class="t-btn sync">SYNC</button>
         <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
-        <button class="t-btn play" onclick="controlDeck('B', 'play')">PLAY</button>
+        <button class="t-btn play" id="btn-play-b" onclick="controlDeck('B', 'toggle')">PLAY ▶</button>
       </div>
     </div>
 
@@ -240,6 +241,7 @@
   </div>
 
   <script>
+    let playerA = null, playerB = null;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
     
@@ -254,6 +256,70 @@
         }
       } catch(e) {}
     };
+
+    function onYouTubeIframeAPIReady() {
+      playerA = new YT.Player('player-a', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'origin': window.location.origin }
+      });
+      playerB = new YT.Player('player-b', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'origin': window.location.origin }
+      });
+    }
+
+    function loadVideoDirect(deck, videoId, title) {
+      const targetPlayer = (deck === 'A') ? playerA : playerB;
+      if (targetPlayer && targetPlayer.cueVideoById) {
+        // cueVideoById carga el video y lo deja PAUSADO listo para PLAY
+        targetPlayer.cueVideoById(videoId);
+        document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
+        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
+      }
+      saveToHistory(title, videoId);
+    }
+
+    function controlDeck(deck, action) {
+      const p = (deck === 'A') ? playerA : playerB;
+      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+      if (!p || !p.getPlayerState) return;
+
+      if (action === 'toggle') {
+        const state = p.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          p.pauseVideo();
+          btn.innerText = 'PLAY ▶';
+        } else {
+          p.playVideo();
+          btn.innerText = 'PAUSE ❚❚';
+        }
+      } else if (action === 'cue') {
+        p.pauseVideo();
+        p.seekTo(0);
+        btn.innerText = 'PLAY ▶';
+      }
+    }
+
+    function setChannelVolume(deck, val) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && p.setVolume) p.setVolume(val);
+    }
+
+    function updateCrossfader(val) {
+      if (!playerA || !playerB) return;
+      const volA = Math.cos((val / 100) * (Math.PI / 2)) * 100;
+      const volB = Math.sin((val / 100) * (Math.PI / 2)) * 100;
+      if (playerA.setVolume) playerA.setVolume(volA);
+      if (playerB.setVolume) playerB.setVolume(volB);
+    }
+
+    function seekVideo(deck, percent) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && p.getDuration) {
+        const dur = p.getDuration();
+        p.seekTo((percent / 100) * dur, true);
+      }
+    }
 
     async function doSearch() {
       const q = document.getElementById('searchInput').value;
@@ -291,22 +357,6 @@
       const song = currentSongsList[index];
       if (!song) return;
       loadVideoDirect(deck, song.videoId, song.title);
-    }
-
-    /* INSERCIÓN DIRECTA Y RÁPIDA DE REPRODUCTOR QUE NUNCA SE TRABA */
-    function loadVideoDirect(deck, videoId, title) {
-      const hostOrigin = window.location.origin;
-      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${encodeURIComponent(hostOrigin)}`;
-      
-      if (deck === 'A') {
-        document.getElementById('viewport-a').innerHTML = `<iframe id="iframe-a" src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-        document.getElementById('title-a').innerText = title;
-      } else {
-        document.getElementById('viewport-b').innerHTML = `<iframe id="iframe-b" src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-        document.getElementById('title-b').innerText = title;
-      }
-
-      saveToHistory(title, videoId);
     }
 
     function saveToHistory(title, videoId) {
