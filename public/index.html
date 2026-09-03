@@ -80,7 +80,7 @@
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -274,6 +274,7 @@
 
   <script>
     let playerA = null, playerB = null;
+    let isUserPlayA = false, isUserPlayB = false; // Bandera de control
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
@@ -308,35 +309,41 @@
       } catch(e){}
     }
 
-    // CARGA ORIGINAL: Autoplay en 0, sin reproducir nada
     function loadVideoDirect(deck, videoId, title) {
       const isA = (deck === 'A');
       const container = document.getElementById(isA ? 'container-a' : 'container-b');
       const targetElemId = isA ? 'player-a' : 'player-b';
 
-      if (isA && playerA) { try { playerA.destroy(); } catch(e){} playerA = null; }
-      if (!isA && playerB) { try { playerB.destroy(); } catch(e){} playerB = null; }
+      if (isA) { isUserPlayA = false; if (playerA) { try { playerA.destroy(); } catch(e){} playerA = null; } }
+      else { isUserPlayB = false; if (playerB) { try { playerB.destroy(); } catch(e){} playerB = null; } }
 
       container.innerHTML = `<div id="${targetElemId}"></div>`;
 
-      // CONFIGURACIÓN ORIGINAL ESTRICTA (autoplay: 0)
       const newPlayer = new YT.Player(targetElemId, {
         height: '100%',
         width: '100%',
         videoId: videoId,
         playerVars: {
-          'autoplay': 0,
+          'autoplay': 1, // Forzamos carga inicial rápida
           'controls': 0,
           'rel': 0,
           'enablejsapi': 1
         },
         events: {
           'onReady': (e) => {
-            e.target.seekTo(0, true);
-            e.target.pauseVideo();
             const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
             e.target.setVolume(currentVol);
             setTransportState(deck, 'cue');
+          },
+          'onStateChange': (e) => {
+            // DETECCIÓN ESTRICTA: Si intenta sonar pero el usuario NO ha dado PLAY, frenar de inmediato
+            if (e.data === YT.PlayerState.PLAYING) {
+              const userStarted = isA ? isUserPlayA : isUserPlayB;
+              if (!userStarted) {
+                e.target.pauseVideo();
+                e.target.seekTo(0, true);
+              }
+            }
           }
         }
       });
@@ -348,19 +355,27 @@
       saveToHistory(title, videoId);
     }
 
-    // BOTÓN PLAY: Único encargado de iniciar la canción
+    // BOTÓN PLAY: Habilita el permiso de reproducción e inicia el video
     function pressPlay(deck) {
-      const p = (deck === 'A') ? playerA : playerB;
+      const isA = (deck === 'A');
+      const p = isA ? playerA : playerB;
       if (!p || typeof p.playVideo !== 'function') return;
+
+      if (isA) isUserPlayA = true;
+      else isUserPlayB = true;
 
       p.playVideo();
       setTransportState(deck, 'play');
     }
 
-    // BOTÓN CUE: Detiene y congela en el segundo 0
+    // BOTÓN CUE: Detiene, congela en 0 y quita la bandera
     function pressCue(deck) {
-      const p = (deck === 'A') ? playerA : playerB;
+      const isA = (deck === 'A');
+      const p = isA ? playerA : playerB;
       if (!p || typeof p.pauseVideo !== 'function') return;
+
+      if (isA) isUserPlayA = false;
+      else isUserPlayB = false;
 
       p.pauseVideo();
       p.seekTo(0, true);
