@@ -276,37 +276,18 @@
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
 
-    // Banderas de estado explícitas para saber si el usuario dio PLAY
-    let isPlayingA = false;
-    let isPlayingB = false;
-
+    // Inicialización estándar limpia de reproductores (Autoplay desactivado)
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0, 'origin': window.location.origin },
-        events: { 'onStateChange': (e) => handlePlayerStateChange('A', e) }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0 }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0, 'origin': window.location.origin },
-        events: { 'onStateChange': (e) => handlePlayerStateChange('B', e) }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0 }
       });
 
       setInterval(updateTimers, 500);
-    }
-
-    function handlePlayerStateChange(deck, event) {
-      const isAllowed = (deck === 'A') ? isPlayingA : isPlayingB;
-      const player = (deck === 'A') ? playerA : playerB;
-      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-
-      // Si el video pasa a estado PLAYING o BUFFERING pero el usuario NO ha presionado PLAY
-      if ((event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.BUFFERING) && !isAllowed) {
-        if (player && typeof player.pauseVideo === 'function') {
-          player.pauseVideo();
-        }
-        if (btn) btn.innerText = 'PLAY ▶';
-      }
     }
 
     function formatTime(sec) {
@@ -347,26 +328,13 @@
       }
     }
 
-    // CARGA DE CANCIÓN PERMANECIENDO EN PAUSA PAUSA PAUSA
+    // CARGA ORIGINAL Y DIRECTA: Solo encola el video en espera de la orden PLAY
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
 
-      if (deck === 'A') isPlayingA = false;
-      if (deck === 'B') isPlayingB = false;
-
       if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
-        // cueVideoById con objeto extendido
-        targetPlayer.cueVideoById({
-          videoId: videoId,
-          startSeconds: 0
-        });
-        
-        // Pausar inmediatamente
-        if (typeof targetPlayer.pauseVideo === 'function') {
-          targetPlayer.pauseVideo();
-        }
-
+        targetPlayer.cueVideoById(videoId);
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         if (btn) btn.innerText = 'PLAY ▶';
       }
@@ -381,19 +349,13 @@
       if (action === 'toggle') {
         const state = p.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
-          if (deck === 'A') isPlayingA = false;
-          if (deck === 'B') isPlayingB = false;
           p.pauseVideo();
           btn.innerText = 'PLAY ▶';
         } else {
-          if (deck === 'A') isPlayingA = true;
-          if (deck === 'B') isPlayingB = true;
           p.playVideo();
           btn.innerText = 'PAUSE ❚❚';
         }
       } else if (action === 'cue') {
-        if (deck === 'A') isPlayingA = false;
-        if (deck === 'B') isPlayingB = false;
         p.pauseVideo();
         p.seekTo(0, true);
         btn.innerText = 'PLAY ▶';
