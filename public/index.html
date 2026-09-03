@@ -56,6 +56,14 @@
     .video-viewport { width: 100%; height: 190px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
 
+    .placeholder-screen {
+      width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background-size: cover; background-position: center; position: relative;
+    }
+    .placeholder-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.75); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px; text-align: center;
+    }
+
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
     }
@@ -151,7 +159,12 @@
       </div>
 
       <div class="video-viewport" id="container-a">
-        <div id="player-a"></div>
+        <div class="placeholder-screen">
+          <div class="placeholder-overlay">
+            <span style="font-size:24px">🎵</span>
+            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
+          </div>
+        </div>
       </div>
 
       <div class="timeline-control">
@@ -221,7 +234,12 @@
       </div>
 
       <div class="video-viewport" id="container-b">
-        <div id="player-b"></div>
+        <div class="placeholder-screen">
+          <div class="placeholder-overlay">
+            <span style="font-size:24px">🎵</span>
+            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
+          </div>
+        </div>
       </div>
 
       <div class="timeline-control">
@@ -280,7 +298,7 @@
 
   <script>
     let playerA = null, playerB = null;
-    let isUserPlayA = false, isUserPlayB = false;
+    let pendingA = null, pendingB = null;
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
@@ -315,77 +333,84 @@
       } catch(e){}
     }
 
-    function loadVideoDirect(deck, videoId, title) {
+    // PREPARAR CANCIÓN (MODO DUMMY - NO CREA IFRAME NI REPRODUCE NADA)
+    function stageSong(deck, videoId, title) {
       const isA = (deck === 'A');
       const container = document.getElementById(isA ? 'container-a' : 'container-b');
-      const targetElemId = isA ? 'player-a' : 'player-b';
+      const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
-      if (isA) { isUserPlayA = false; if (playerA) { try { playerA.destroy(); } catch(e){} playerA = null; } }
-      else { isUserPlayB = false; if (playerB) { try { playerB.destroy(); } catch(e){} playerB = null; } }
+      // Destruir player previo si existía
+      if (isA) { if (playerA) { try { playerA.destroy(); } catch(e){} playerA = null; } pendingA = { videoId, title }; }
+      else { if (playerB) { try { playerB.destroy(); } catch(e){} playerB = null; } pendingB = { videoId, title }; }
 
-      container.innerHTML = `<div id="${targetElemId}"></div>`;
-
-      const newPlayer = new YT.Player(targetElemId, {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-          'autoplay': 0,
-          'controls': 0,
-          'rel': 0,
-          'enablejsapi': 1
-        },
-        events: {
-          'onReady': (e) => {
-            e.target.pauseVideo();
-            e.target.seekTo(0, true);
-            setTransportState(deck, 'cue');
-          },
-          'onStateChange': (e) => {
-            if (e.data === YT.PlayerState.PLAYING) {
-              const userStarted = isA ? isUserPlayA : isUserPlayB;
-              if (!userStarted) {
-                e.target.pauseVideo();
-                e.target.seekTo(0, true);
-              }
-            }
-          }
-        }
-      });
-
-      if (isA) playerA = newPlayer;
-      else playerB = newPlayer;
+      // Mostrar pantalla de vista previa
+      container.innerHTML = `
+        <div class="placeholder-screen" style="background-image: url('${thumbUrl}')">
+          <div class="placeholder-overlay">
+            <span style="font-size:11px; font-weight:bold; color:var(--orange-accent)">LISTA PARA REPRODUCIR</span>
+            <span style="font-size:12px; font-weight:800; color:#fff">${title}</span>
+            <span style="font-size:10px; color:var(--text-sub)">Presiona PLAY ▶ para iniciar</span>
+          </div>
+        </div>
+      `;
 
       document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
+      setTransportState(deck, 'cue');
       saveToHistory(title, videoId);
     }
 
     function pressPlay(deck) {
       const isA = (deck === 'A');
-      const p = isA ? playerA : playerB;
-      if (!p || typeof p.playVideo !== 'function') return;
+      let p = isA ? playerA : playerB;
+      const pending = isA ? pendingA : pendingB;
 
-      if (isA) isUserPlayA = true;
-      else isUserPlayB = true;
+      // Si hay una canción pendiente y el player no existe, lo creamos e iniciamos en este instante
+      if (!p && pending) {
+        const container = document.getElementById(isA ? 'container-a' : 'container-b');
+        const targetElemId = isA ? 'player-a' : 'player-b';
+        container.innerHTML = `<div id="${targetElemId}"></div>`;
 
-      p.unMute();
-      const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
-      p.setVolume(currentVol);
+        const newPlayer = new YT.Player(targetElemId, {
+          height: '100%',
+          width: '100%',
+          videoId: pending.videoId,
+          playerVars: {
+            'autoplay': 1,
+            'controls': 0,
+            'rel': 0,
+            'enablejsapi': 1
+          },
+          events: {
+            'onReady': (e) => {
+              const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+              e.target.setVolume(currentVol);
+              e.target.playVideo();
+              setTransportState(deck, 'play');
+            }
+          }
+        });
 
-      p.playVideo();
-      setTransportState(deck, 'play');
+        if (isA) { playerA = newPlayer; pendingA = null; }
+        else { playerB = newPlayer; pendingB = null; }
+        return;
+      }
+
+      // Si el player ya existe (estaba pausado), le damos resume
+      if (p && typeof p.playVideo === 'function') {
+        const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+        p.setVolume(currentVol);
+        p.playVideo();
+        setTransportState(deck, 'play');
+      }
     }
 
     function pressCue(deck) {
       const isA = (deck === 'A');
       const p = isA ? playerA : playerB;
-      if (!p || typeof p.pauseVideo !== 'function') return;
-
-      if (isA) isUserPlayA = false;
-      else isUserPlayB = false;
-
-      p.pauseVideo();
-      p.seekTo(0, true);
+      if (p && typeof p.pauseVideo === 'function') {
+        p.pauseVideo();
+        p.seekTo(0, true);
+      }
       setTransportState(deck, 'cue');
     }
 
@@ -524,7 +549,7 @@
     function selectSong(deck, index) {
       const song = currentSongsList[index];
       if (!song) return;
-      loadVideoDirect(deck, song.videoId, song.title);
+      stageSong(deck, song.videoId, song.title);
     }
 
     function saveToHistory(title, videoId) {
@@ -548,8 +573,8 @@
         row.innerHTML = `
           <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
           <div style="display:flex; gap:6px">
-            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
-            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
           </div>
         `;
         list.appendChild(row);
