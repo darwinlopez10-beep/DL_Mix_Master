@@ -70,8 +70,10 @@
 
     .transport-row { display: flex; gap: 4px; }
     .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
-    .t-btn.play { background: var(--green-accent); color: #000; }
-    .t-btn.cue { background: var(--orange-accent); color: #000; }
+    .t-btn.play { background: #333; color: #fff; }
+    .t-btn.play.active { background: var(--green-accent); color: #000; }
+    .t-btn.cue { background: #333; color: #fff; }
+    .t-btn.cue.active { background: var(--orange-accent); color: #000; boxShadow: 0 0 10px var(--orange-accent); }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
     .mixer-panel {
@@ -173,8 +175,8 @@
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('A')">SYNC</button>
-        <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
-        <button class="t-btn play" id="btn-play-a" onclick="controlDeck('A', 'toggle')">PLAY ▶</button>
+        <button class="t-btn cue active" id="btn-cue-a" onclick="pressCue('A')">CUE</button>
+        <button class="t-btn play" id="btn-play-a" onclick="pressPlay('A')">PLAY ▶</button>
       </div>
     </div>
 
@@ -243,8 +245,8 @@
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('B')">SYNC</button>
-        <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
-        <button class="t-btn play" id="btn-play-b" onclick="controlDeck('B', 'toggle')">PLAY ▶</button>
+        <button class="t-btn cue active" id="btn-cue-b" onclick="pressCue('B')">CUE</button>
+        <button class="t-btn play" id="btn-play-b" onclick="pressPlay('B')">PLAY ▶</button>
       </div>
     </div>
 
@@ -306,6 +308,86 @@
       } catch(e){}
     }
 
+    // LÓGICA DE CARGA SILENCIOSA + ARME EN CUE
+    function loadVideoDirect(deck, videoId, title) {
+      const isA = (deck === 'A');
+      const container = document.getElementById(isA ? 'container-a' : 'container-b');
+      const targetElemId = isA ? 'player-a' : 'player-b';
+
+      if (isA && playerA) { try { playerA.destroy(); } catch(e){} playerA = null; }
+      if (!isA && playerB) { try { playerB.destroy(); } catch(e){} playerB = null; }
+
+      container.innerHTML = `<div id="${targetElemId}"></div>`;
+
+      // Carga directa en MUTE para engañar las restricciones del navegador
+      const newPlayer = new YT.Player(targetElemId, {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          'autoplay': 1,
+          'mute': 1,
+          'controls': 0,
+          'rel': 0,
+          'enablejsapi': 1
+        },
+        events: {
+          'onReady': (e) => {
+            // Inmediatamente congelamos en punto cero, activamos sonido y dejamos en CUE
+            e.target.pauseVideo();
+            e.target.seekTo(0, true);
+            e.target.unMute();
+            
+            // Volvemos a sincronizar el volumen actual del fader
+            const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+            e.target.setVolume(currentVol);
+
+            // Resetea botones al estado CUE ACTIVO
+            setTransportState(deck, 'cue');
+          }
+        }
+      });
+
+      if (isA) playerA = newPlayer;
+      else playerB = newPlayer;
+
+      document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
+      saveToHistory(title, videoId);
+    }
+
+    // ACCIÓN BOTÓN PLAY
+    function pressPlay(deck) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (!p || typeof p.playVideo !== 'function') return;
+
+      p.playVideo();
+      setTransportState(deck, 'play');
+    }
+
+    // ACCIÓN BOTÓN CUE (Detiene y manda al segundo 0)
+    function pressCue(deck) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (!p || typeof p.pauseVideo !== 'function') return;
+
+      p.pauseVideo();
+      p.seekTo(0, true);
+      setTransportState(deck, 'cue');
+    }
+
+    // GESTIÓN DE VISUAL DE BOTONES (CUE vs PLAY)
+    function setTransportState(deck, activeState) {
+      const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+      const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
+
+      if (activeState === 'play') {
+        btnPlay.classList.add('active');
+        btnCue.classList.remove('active');
+      } else {
+        btnCue.classList.add('active');
+        btnPlay.classList.remove('active');
+      }
+    }
+
     function changeSpeed(deck, delta) {
       if (deck === 'A') {
         speedA = Math.min(Math.max(0.5, speedA + delta), 2.0);
@@ -315,70 +397,6 @@
         speedB = Math.min(Math.max(0.5, speedB + delta), 2.0);
         if (playerB && playerB.setPlaybackRate) playerB.setPlaybackRate(speedB);
         document.getElementById('speed-label-b').innerText = speedB.toFixed(2) + 'x';
-      }
-    }
-
-    // CARGA PERFECTA MEDIANTE DESTRUCCIÓN Y RECREACIÓN
-    function loadVideoDirect(deck, videoId, title) {
-      const isA = (deck === 'A');
-      const container = document.getElementById(isA ? 'container-a' : 'container-b');
-      const targetElemId = isA ? 'player-a' : 'player-b';
-      const btn = document.getElementById(isA ? 'btn-play-a' : 'btn-play-b');
-
-      // Destruir el reproductor anterior completamente
-      if (isA && playerA) { try { playerA.destroy(); } catch(e){} playerA = null; }
-      if (!isA && playerB) { try { playerB.destroy(); } catch(e){} playerB = null; }
-
-      // Recrear la etiqueta HTML contenedora
-      container.innerHTML = `<div id="${targetElemId}"></div>`;
-
-      // Crear reproductor nuevo con autoplay APAGADO (0)
-      const newPlayer = new YT.Player(targetElemId, {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-          'autoplay': 0,
-          'controls': 0,
-          'rel': 0,
-          'enablejsapi': 1
-        },
-        events: {
-          'onReady': (e) => {
-            // Asegura freno absoluto al cargar
-            e.target.pauseVideo();
-            e.target.seekTo(0, true);
-          }
-        }
-      });
-
-      if (isA) playerA = newPlayer;
-      else playerB = newPlayer;
-
-      document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
-      if (btn) btn.innerText = 'PLAY ▶';
-
-      saveToHistory(title, videoId);
-    }
-
-    function controlDeck(deck, action) {
-      const p = (deck === 'A') ? playerA : playerB;
-      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-      if (!p || typeof p.getPlayerState !== 'function') return;
-
-      if (action === 'toggle') {
-        const state = p.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          p.pauseVideo();
-          btn.innerText = 'PLAY ▶';
-        } else {
-          p.playVideo();
-          btn.innerText = 'PAUSE ❚❚';
-        }
-      } else if (action === 'cue') {
-        p.pauseVideo();
-        p.seekTo(0, true);
-        btn.innerText = 'PLAY ▶';
       }
     }
 
