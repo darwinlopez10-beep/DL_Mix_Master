@@ -293,10 +293,9 @@
       setInterval(updateTimers, 500);
     }
 
-    // INTERCEPTOR ABSOLUTO DE REPRODUCCIÓN
+    // BLOQUEO ABSOLUTO
     function handleStateChange(deck, event) {
       const allowed = (deck === 'A') ? isPlayingA : isPlayingB;
-      // Si el reproductor entra en PLAYING pero el DJ no ha dado orden explícita de PLAY
       if (event.data === YT.PlayerState.PLAYING && !allowed) {
         event.target.pauseVideo();
         event.target.seekTo(0, true);
@@ -341,7 +340,7 @@
       }
     }
 
-    // CARGA DE CANCIÓN CON BLOQUEO INMEDIATO EN CUE
+    // CARGA DE CANCIÓN CON CORTE INMEDIATO
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
@@ -349,15 +348,24 @@
       if (deck === 'A') isPlayingA = false;
       if (deck === 'B') isPlayingB = false;
 
-      if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
-        // Asignamos la pista en modo CUE
-        targetPlayer.cueVideoById(videoId);
-        
-        // Forzamos la pausa y retroceso a 0 para congelarlo de una vez
-        setTimeout(() => {
+      if (targetPlayer) {
+        if (typeof targetPlayer.loadVideoById === 'function') {
+          targetPlayer.loadVideoById(videoId);
+        } else if (typeof targetPlayer.cueVideoById === 'function') {
+          targetPlayer.cueVideoById(videoId);
+        }
+
+        // Cortamos la reproducción al instante
+        const killInterval = setInterval(() => {
           if (targetPlayer.pauseVideo) targetPlayer.pauseVideo();
           if (targetPlayer.seekTo) targetPlayer.seekTo(0, true);
-        }, 100);
+        }, 50);
+
+        setTimeout(() => {
+          clearInterval(killInterval);
+          if (targetPlayer.pauseVideo) targetPlayer.pauseVideo();
+          if (targetPlayer.seekTo) targetPlayer.seekTo(0, true);
+        }, 600);
 
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         if (btn) btn.innerText = 'PLAY ▶';
