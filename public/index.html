@@ -252,19 +252,19 @@
     <!-- BROWSER -->
     <div class="browser-panel">
       <div class="tree-sidebar">
-        <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Pistas</div>
+        <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Karaoke Pistas</div>
         <div class="tree-node" id="tab-historial" onclick="showHistory()">🕒 Historial</div>
       </div>
 
       <div class="search-content">
         <div class="search-input-group" id="searchBarGroup">
-          <input type="text" id="searchInput" placeholder="Buscar canciones o karaokes..." onkeydown="if(event.key==='Enter') doSearch()">
-          <button onclick="doSearch()">BUSCAR</button>
+          <input type="text" id="searchInput" placeholder="Nombre de la canción o artista..." onkeydown="if(event.key==='Enter') doSearch()">
+          <button onclick="doSearch()">BUSCAR KARAOKE</button>
         </div>
 
         <div class="songs-table" id="resultsList">
           <div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">
-            Ingresa un término para buscar canciones.
+            Ingresa el nombre del cantante o canción para buscar pistas de Karaoke.
           </div>
         </div>
       </div>
@@ -280,11 +280,11 @@
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1 }
       });
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1 }
       });
 
       setInterval(updateTimers, 500);
@@ -328,12 +328,13 @@
       }
     }
 
+    // Usar cueVideoById para que la cargue PAUSADA en el Deck en vez de sonar de una vez
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
-      if (targetPlayer && typeof targetPlayer.loadVideoById === 'function') {
-        targetPlayer.loadVideoById(videoId);
+      if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
+        targetPlayer.cueVideoById(videoId);
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
-        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PAUSE ❚❚';
+        document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b').innerText = 'PLAY ▶';
       }
       saveToHistory(title, videoId);
     }
@@ -400,7 +401,7 @@
       const q = document.getElementById('searchInput').value;
       if (!q) return;
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Cargando resultados...</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas de Karaoke...</div>';
 
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
