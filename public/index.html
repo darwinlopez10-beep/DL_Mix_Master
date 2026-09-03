@@ -48,7 +48,7 @@
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     .video-viewport { width: 100%; height: 210px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
-    .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; }
+    .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
 
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
@@ -101,7 +101,6 @@
     .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
     .song-row:hover { background: #161c28; }
 
-    /* MODAL QR DE VUELTA */
     #qr-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
@@ -122,22 +121,23 @@
 
   <div id="qr-modal">
     <div class="modal-content">
-      <h3 style="color:var(--orange-accent)">CONTROL REMOTO</h3>
-      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código con tu celular o tablet para comandar la consola:</p>
+      <h3 style="color:var(--orange-accent)">CONTROL REMOTO MÓVIL</h3>
+      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código con tu celular o tablet:</p>
       <img id="qr-img" src="" alt="Cargando QR...">
       <button class="btn-action" style="width:100%; justify-content:center; margin-top:10px" onclick="toggleQR()">CERRAR</button>
     </div>
   </div>
 
   <div class="console-container">
+    <!-- DECK A -->
     <div class="deck-panel">
       <div class="deck-top-info">
         <span class="deck-tag a">DECK A</span>
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport">
-        <div id="player-a"></div>
+      <div class="video-viewport" id="viewport-a">
+        <div id="player-a-container"></div>
       </div>
 
       <div class="timeline-control">
@@ -159,6 +159,7 @@
       </div>
     </div>
 
+    <!-- MEZCLADOR CENTRAL -->
     <div class="mixer-panel">
       <div class="volume-faders-row">
         <div class="fader-unit">
@@ -186,14 +187,15 @@
       </div>
     </div>
 
+    <!-- DECK B -->
     <div class="deck-panel">
       <div class="deck-top-info">
         <span class="deck-tag b">DECK B</span>
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport">
-        <div id="player-b"></div>
+      <div class="video-viewport" id="viewport-b">
+        <div id="player-b-container"></div>
       </div>
 
       <div class="timeline-control">
@@ -215,6 +217,7 @@
       </div>
     </div>
 
+    <!-- NAVEGADOR Y BUSCADOR -->
     <div class="browser-panel">
       <div class="tree-sidebar">
         <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Pistas</div>
@@ -236,13 +239,13 @@
     </div>
   </div>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    let playerA, playerB;
-    let volAVal = 100, volBVal = 100;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
+    
+    // Conexión WebSocket
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -251,19 +254,6 @@
         }
       } catch(e) {}
     };
-
-    function onYouTubeIframeAPIReady() {
-      playerA = new YT.Player('player-a', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
-      });
-      playerB = new YT.Player('player-b', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1, 'rel': 0 }
-      });
-
-      setInterval(syncTimelines, 1000);
-    }
 
     async function doSearch() {
       const q = document.getElementById('searchInput').value;
@@ -303,29 +293,20 @@
       loadVideoDirect(deck, song.videoId, song.title);
     }
 
-    /* CARGA DIRECTA Y SEGURA DE VIDEO EN YOUTUBE */
+    /* INSERCIÓN DIRECTA Y RÁPIDA DE REPRODUCTOR QUE NUNCA SE TRABA */
     function loadVideoDirect(deck, videoId, title) {
+      const hostOrigin = window.location.origin;
+      const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${encodeURIComponent(hostOrigin)}`;
+      
       if (deck === 'A') {
-        if (playerA && typeof playerA.loadVideoById === 'function') {
-          playerA.loadVideoById(videoId);
-        } else {
-          document.getElementById('player-a').innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%"></iframe>`;
-        }
+        document.getElementById('viewport-a').innerHTML = `<iframe id="iframe-a" src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
         document.getElementById('title-a').innerText = title;
       } else {
-        if (playerB && typeof playerB.loadVideoById === 'function') {
-          playerB.loadVideoById(videoId);
-        } else {
-          document.getElementById('player-b').innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen style="width:100%;height:100%"></iframe>`;
-        }
+        document.getElementById('viewport-b').innerHTML = `<iframe id="iframe-b" src="${embedUrl}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
         document.getElementById('title-b').innerText = title;
       }
 
       saveToHistory(title, videoId);
-
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'yt_play', deck, videoId }));
-      }
     }
 
     function saveToHistory(title, videoId) {
@@ -357,70 +338,13 @@
       });
     }
 
-    function syncTimelines() {
-      if (playerA && playerA.getDuration) {
-        const cur = playerA.getCurrentTime() || 0;
-        const dur = playerA.getDuration() || 0;
-        if (dur > 0) {
-          document.getElementById('seek-a').value = (cur / dur) * 100;
-          document.getElementById('time-a-curr').innerText = formatTime(cur);
-          document.getElementById('time-a-dur').innerText = formatTime(dur);
-        }
-      }
-      if (playerB && playerB.getDuration) {
-        const cur = playerB.getCurrentTime() || 0;
-        const dur = playerB.getDuration() || 0;
-        if (dur > 0) {
-          document.getElementById('seek-b').value = (cur / dur) * 100;
-          document.getElementById('time-b-curr').innerText = formatTime(cur);
-          document.getElementById('time-b-dur').innerText = formatTime(dur);
-        }
-      }
-    }
-
-    function seekVideo(deck, percent) {
-      const player = (deck === 'A') ? playerA : playerB;
-      if (player && player.getDuration) {
-        const dur = player.getDuration();
-        const targetSeconds = (percent / 100) * dur;
-        player.seekTo(targetSeconds, true);
-      }
-    }
-
-    function formatTime(sec) {
-      const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60);
-      return `${m}:${s < 10 ? '0' : ''}${s}`;
-    }
-
-    function controlDeck(deck, action) {
-      const player = (deck === 'A') ? playerA : playerB;
-      if (!player) return;
-      if (action === 'play') player.playVideo();
-      if (action === 'cue') { player.seekTo(0); player.pauseVideo(); }
-    }
-
-    function setChannelVolume(deck, val) {
-      if (deck === 'A') { volAVal = val; if (playerA && playerA.setVolume) playerA.setVolume(val); }
-      else { volBVal = val; if (playerB && playerB.setVolume) playerB.setVolume(val); }
-    }
-
-    function updateCrossfader(val) {
-      const factorA = (100 - val) / 50;
-      const factorB = val / 50;
-      if (playerA && playerA.setVolume) playerA.setVolume(Math.min(100, volAVal * factorA));
-      if (playerB && playerB.setVolume) playerB.setVolume(Math.min(100, volBVal * factorB));
-      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'crossfade_video', value: val }));
-    }
-
     function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
 
-    /* MOSTRAR / OCULTAR CÓDIGO QR */
     function toggleQR() {
       const modal = document.getElementById('qr-modal');
       const img = document.getElementById('qr-img');
-      const fullUrl = window.location.protocol + '//' + window.location.host;
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullUrl)}`;
+      const remoteUrl = window.location.origin + '/remote.html';
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(remoteUrl)}`;
       modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
     }
   </script>
