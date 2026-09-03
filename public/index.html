@@ -73,14 +73,14 @@
     .t-btn.play { background: #333; color: #fff; }
     .t-btn.play.active { background: var(--green-accent); color: #000; }
     .t-btn.cue { background: #333; color: #fff; }
-    .t-btn.cue.active { background: var(--orange-accent); color: #000; boxShadow: 0 0 10px var(--orange-accent); }
+    .t-btn.cue.active { background: var(--orange-accent); color: #000; box-shadow: 0 0 10px var(--orange-accent); }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
     .mixer-panel {
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-around: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -308,7 +308,7 @@
       } catch(e){}
     }
 
-    // LÓGICA DE CARGA SILENCIOSA + ARME EN CUE
+    // CARGA ORIGINAL: Autoplay en 0, sin reproducir nada
     function loadVideoDirect(deck, videoId, title) {
       const isA = (deck === 'A');
       const container = document.getElementById(isA ? 'container-a' : 'container-b');
@@ -319,30 +319,23 @@
 
       container.innerHTML = `<div id="${targetElemId}"></div>`;
 
-      // Carga directa en MUTE para engañar las restricciones del navegador
+      // CONFIGURACIÓN ORIGINAL ESTRICTA (autoplay: 0)
       const newPlayer = new YT.Player(targetElemId, {
         height: '100%',
         width: '100%',
         videoId: videoId,
         playerVars: {
-          'autoplay': 1,
-          'mute': 1,
+          'autoplay': 0,
           'controls': 0,
           'rel': 0,
           'enablejsapi': 1
         },
         events: {
           'onReady': (e) => {
-            // Inmediatamente congelamos en punto cero, activamos sonido y dejamos en CUE
-            e.target.pauseVideo();
             e.target.seekTo(0, true);
-            e.target.unMute();
-            
-            // Volvemos a sincronizar el volumen actual del fader
+            e.target.pauseVideo();
             const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
             e.target.setVolume(currentVol);
-
-            // Resetea botones al estado CUE ACTIVO
             setTransportState(deck, 'cue');
           }
         }
@@ -355,7 +348,7 @@
       saveToHistory(title, videoId);
     }
 
-    // ACCIÓN BOTÓN PLAY
+    // BOTÓN PLAY: Único encargado de iniciar la canción
     function pressPlay(deck) {
       const p = (deck === 'A') ? playerA : playerB;
       if (!p || typeof p.playVideo !== 'function') return;
@@ -364,7 +357,7 @@
       setTransportState(deck, 'play');
     }
 
-    // ACCIÓN BOTÓN CUE (Detiene y manda al segundo 0)
+    // BOTÓN CUE: Detiene y congela en el segundo 0
     function pressCue(deck) {
       const p = (deck === 'A') ? playerA : playerB;
       if (!p || typeof p.pauseVideo !== 'function') return;
@@ -374,7 +367,6 @@
       setTransportState(deck, 'cue');
     }
 
-    // GESTIÓN DE VISUAL DE BOTONES (CUE vs PLAY)
     function setTransportState(deck, activeState) {
       const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
       const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
