@@ -8,7 +8,147 @@
 </head>
 <body>
     <div id="app">
-        <!-- Aquí va todo el contenido de tu consola de música -->
+        <!-- Barra Superior -->
+        <header class="top-bar">
+            <div class="app-title">
+                <h1>Prestige Tracks Player</h1>
+                <span class="sub-badge">DJ Console v1.0</span>
+            </div>
+            <div class="top-controls">
+                <button class="top-btn active">Sync On</button>
+                <button class="top-btn panic">PANIC</button>
+            </div>
+        </header>
+
+        <!-- Layout Principal -->
+        <div class="main-layout">
+            <!-- Sidebar Izquierdo -->
+            <aside class="sidebar">
+                <div class="search-box">
+                    <input type="text" placeholder="Buscar pistas...">
+                </div>
+                <div class="menu-category">
+                    <h3>BIBLIOTECA</h3>
+                    <div class="menu-item active"><span>Todas las Pistas</span> <span class="count">24</span></div>
+                    <div class="menu-item"><span>Favoritas</span> <span class="count">8</span></div>
+                </div>
+                <div class="menu-category">
+                    <h3>LISTA DE REPRODUCCIÓN</h3>
+                    <div class="playlist-scroll">
+                        <div class="track-list-item">Pista 01 - Intro Mix</div>
+                        <div class="track-list-item">Pista 02 - Baseline Heavy</div>
+                        <div class="track-list-item">Pista 03 - Summer Vibe</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Consola Central (Decks y Mezclador) -->
+            <main class="console-area">
+                <div class="live-header">
+                    <h2>Consola en Vivo</h2>
+                    <span>Master BPM: 128.0</span>
+                </div>
+
+                <div class="decks-container">
+                    <!-- Deck A -->
+                    <section class="deck-panel">
+                        <div class="deck-header">
+                            <span class="deck-badge red">DECK A</span>
+                            <span class="track-status">Cargado</span>
+                        </div>
+                        <div class="waveform-box">
+                            <div class="waveform-placeholder">
+                                <p>Onda de Audio A</p>
+                                <div class="wave-lines">||||||||||||||||||||||||||||</div>
+                            </div>
+                        </div>
+                        <div class="deck-controls-row">
+                            <button class="ctrl-btn">CUE</button>
+                            <button class="ctrl-btn primary">PLAY</button>
+                        </div>
+                        <div class="deck-sliders-row">
+                            <div class="slider-group">
+                                <label>PITCH</label>
+                                <div class="slider-control">
+                                    <button>-</button>
+                                    <span>0.0%</span>
+                                    <button>+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="key-lock-bar">
+                            <button class="key-lock-btn active">KEY LOCK</button>
+                        </div>
+                    </section>
+
+                    <!-- Mezclador Central -->
+                    <div class="mixer-center">
+                        <button class="action-btn">FX Master</button>
+                        <div class="mixer-section">
+                            <span class="mixer-title">ECUALIZADOR</span>
+                            <div class="faders-box">
+                                <div class="fader-col">
+                                    <label>HIGH</label>
+                                    <input type="range" min="0" max="100" value="50">
+                                </div>
+                                <div class="fader-col">
+                                    <label>MID</label>
+                                    <input type="range" min="0" max="100" value="50">
+                                </div>
+                                <div class="fader-col">
+                                    <label>LOW</label>
+                                    <input type="range" min="0" max="100" value="50">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="crossfader-container">
+                            <label>CROSSFADER</label>
+                            <input type="range" min="0" max="100" value="50" class="crossfader">
+                            <div class="crossfader-labels">
+                                <span>A</span>
+                                <span>B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deck B -->
+                    <section class="deck-panel">
+                        <div class="deck-header">
+                            <span class="deck-badge blue">DECK B</span>
+                            <span class="track-status">Cargado</span>
+                        </div>
+                        <div class="waveform-box">
+                            <div class="waveform-placeholder">
+                                <p>Onda de Audio B</p>
+                                <div class="wave-lines">||||||||||||||||||||||||||||</div>
+                            </div>
+                        </div>
+                        <div class="deck-controls-row">
+                            <button class="ctrl-btn">CUE</button>
+                            <button class="ctrl-btn primary">PLAY</button>
+                        </div>
+                        <div class="deck-sliders-row">
+                            <div class="slider-group">
+                                <label>PITCH</label>
+                                <div class="slider-control">
+                                    <button>-</button>
+                                    <span>0.0%</span>
+                                    <button>+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="key-lock-bar">
+                            <button class="key-lock-btn active">KEY LOCK</button>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+
+        <!-- Footer Ticker -->
+        <footer class="bottom-ticker">
+            <p>PRESTIGE TRACKS SYSTEM OPERATIONAL — LISTO PARA MEZCLAR</p>
+        </footer>
     </div>
 </body>
 </html>
