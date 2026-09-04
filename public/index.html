@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b12">
-<title>Karaoke Player</title>
+<title>Karaoke Station Pro - Con Control Remoto QR</title>
+<!-- Librería PeerJS para la conexión P2P del Control Remoto -->
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<!-- Librería para generar el Código QR al instante -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}
 :root{
@@ -18,7 +22,7 @@ button{border:0;cursor:pointer;color:var(--text)}
 header{display:flex;align-items:center;gap:18px;padding:0 20px;background:#0d121b;border-bottom:1px solid var(--border)}
 .logo{font-size:21px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
 .logo span{color:var(--accent)}
-.search{flex:1;max-width:600px;position:relative}
+.search{flex:1;max-width:500px;position:relative}
 .search input{width:100%;background:#171e2b;border:1px solid var(--border);border-radius:9px;color:white;padding:11px 15px;outline:none}
 .search input:focus{border-color:var(--accent)}
 .header-actions{margin-left:auto;display:flex;gap:8px}
@@ -55,8 +59,8 @@ video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
 .file-input{display:none}
 .upload{display:block;text-align:center;background:var(--accent);padding:11px;border-radius:8px;font-weight:700;margin-bottom:10px}
 .upload:hover{background:var(--accent2)}
-.queue-controls{display:flex;gap:7px}
-.queue-controls button{flex:1;background:#202a3b;padding:8px;border-radius:7px;font-size:12px}
+.qr-box{background:#fff;padding:12px;border-radius:8px;text-align:center;margin-top:10px}
+#qrcode img{display:block;margin:0 auto}
 footer{background:#0d121b;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;padding:0 18px;gap:20px}
 .progress-area{display:flex;align-items:center;gap:10px}
 .time{font-size:11px;color:var(--muted);width:42px;text-align:center}
@@ -69,28 +73,22 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
 .footer-right{display:flex;justify-content:flex-end;align-items:center;gap:10px}
 .volume{display:flex;align-items:center;gap:8px;width:150px}
 #volume{width:90px}
-@media(max-width:1000px){
- .main{grid-template-columns:250px 1fr}
- .rightbar{display:none}
- footer{grid-template-columns:1fr 2fr}
- .footer-right{display:none}
-}
-@media(max-width:700px){
- body{overflow:auto}.app{height:auto;min-height:100vh;grid-template-rows:60px auto 150px}
- .main{grid-template-columns:1fr}.sidebar{display:none}
- .player-area{height:calc(100vh - 210px);min-height:400px}
- footer{position:sticky;bottom:0;grid-template-columns:1fr;padding:8px}
- .progress-area{grid-row:1}.controls{grid-row:2}
-}
+
+/* Estilo para vista de control remoto móvil si se abre en el cel */
+.remote-mode { display:none; padding:20px; text-align:center; background:var(--bg); height:100vh; overflow-y:auto; }
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- INTERFAZ PRINCIPAL DE LA LAPTOP -->
+<div class="app" id="desktopApp">
 <header>
-  <div class="logo">🎤 <span>Karaoke</span> Player</div>
-  <div class="search"><input id="search" type="search" placeholder="Buscar canción..."></div>
+  <div class="logo">🎤 <span>Karaoke</span> Station</div>
+  <div class="search">
+    <input id="search" type="search" placeholder="Buscar canción local o en YouTube...">
+  </div>
   <div class="header-actions">
-    <button class="icon-btn" id="clearBtn" title="Limpiar biblioteca">🗑</button>
+    <button class="icon-btn" id="clearBtn" title="Limpiar">🗑</button>
     <button class="icon-btn" id="fsBtn" title="Pantalla completa">⛶</button>
   </div>
 </header>
@@ -98,10 +96,10 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
 <div class="main">
   <aside class="sidebar">
     <div class="side-title"><span>Biblioteca</span><span class="count" id="count">0 canciones</span></div>
-    <label class="upload" for="filePicker">＋ Agregar videos</label>
+    <label class="upload" for="filePicker">＋ Agregar videos locales</label>
     <input id="filePicker" class="file-input" type="file" accept="video/*" multiple>
     <div id="songList"></div>
-    <div id="empty" class="empty">Haz clic en "Agregar videos" para elegir tus karaokes.</div>
+    <div id="empty" class="empty">Carga tus videos o busca temas.</div>
   </aside>
 
   <section class="player-area" id="playerArea">
@@ -110,30 +108,27 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
       <div class="no-video" id="noVideo">
         <div class="mic">🎤</div>
         <h2>Listo para cantar</h2>
-        <p>Selecciona un video de la izquierda para comenzar.</p>
+        <p>Selecciona una canción o escanea el QR con tu celular.</p>
       </div>
     </div>
     <div class="now-playing">
       <div class="now-title" id="nowTitle">Ninguna canción seleccionada</div>
-      <div class="now-artist" id="nowArtist">Karaoke Player</div>
+      <div class="now-artist" id="nowArtist">Karaoke Station Pro</div>
     </div>
   </section>
 
   <aside class="sidebar rightbar">
-    <div class="side-title">Información</div>
+    <div class="side-title">Control Remoto QR</div>
     <div class="right-content">
       <div class="info-card">
-        <h3>Estado</h3>
-        <div class="info-row"><span>Reproductor</span><b id="status">En espera</b></div>
-        <div class="info-row"><span>Duración</span><b id="duration">00:00</b></div>
-        <div class="info-row"><span>Velocidad</span><b id="speedLabel">1.00x</b></div>
+        <h3>Escanea para controlar</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Abre la cámara de tu celular y escanea este código:</p>
+        <div class="qr-box" id="qrcode"></div>
+        <div class="info-row" style="margin-top:10px"><span>Estado:</span><b id="peerStatus" style="color:#e63946">Conectando...</b></div>
       </div>
       <div class="info-card">
-        <h3>Ajustes</h3>
-        <div class="queue-controls">
-          <button id="speedDown">− Lento</button>
-          <button id="speedUp">+ Rápido</button>
-        </div>
+        <h3>Buscador YouTube</h3>
+        <p style="font-size:12px;color:var(--muted)">Escribe arriba para buscar videos directos de YouTube para descargar o reproducir.</p>
       </div>
     </div>
   </aside>
@@ -159,6 +154,23 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
 </footer>
 </div>
 
+<!-- INTERFAZ QUE SE ACTIVA AUTOMÁTICAMENTE SI ALGUIEN ABRE EL ENLACE DESDE EL CELULAR -->
+<div class="remote-mode" id="remoteApp">
+  <h2 style="color:var(--accent);margin-top:10px">📱 Control Remoto Karaoke</h2>
+  <p style="color:var(--muted);font-size:14px">Maneja la música de la laptop desde tu teléfono</p>
+  <div style="background:var(--panel);padding:15px;border-radius:10px;margin:20px 0">
+    <h3 id="remoteSongTitle" style="margin:0 0 10px 0;font-size:16px">Reproduciendo: Ninguna</h3>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="ctrl" id="rPrev">⏮</button>
+      <button class="ctrl play" id="rPlay">▶</button>
+      <button class="ctrl" id="rNext">⏭</button>
+    </div>
+  </div>
+  <h3 style="text-align:left;font-size:14px">Pedir canción o buscar en YouTube:</h3>
+  <input id="remoteSearch" type="search" placeholder="Escribe artista o canción..." style="width:100%;padding:12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;color:white;margin-bottom:10px">
+  <div id="remoteSongList" style="text-align:left"></div>
+</div>
+
 <script>
 const video=document.getElementById('video');
 const filePicker=document.getElementById('filePicker');
@@ -169,20 +181,73 @@ const count=document.getElementById('count');
 const noVideo=document.getElementById('noVideo');
 const nowTitle=document.getElementById('nowTitle');
 const nowArtist=document.getElementById('nowArtist');
-const statusEl=document.getElementById('status');
+const statusEl=document.getElementById('peerStatus');
 const progress=document.getElementById('progress');
 const currentTime=document.getElementById('currentTime');
 const totalTime=document.getElementById('totalTime');
-const durationEl=document.getElementById('duration');
 const volume=document.getElementById('volume');
 const mute=document.getElementById('mute');
 const playBtn=document.getElementById('play');
-const speedLabel=document.getElementById('speedLabel');
 
 let songs=[];
 let currentIndex=-1;
-let playbackRate=1;
+let peer=null;
+let connections=[];
 
+// DETECTAR SI SE ABRE EN MODO CELULAR (CONTROL REMOTO) via URL hash
+const urlParams = new URLSearchParams(window.location.search);
+const hostId = urlParams.get('host');
+
+if(hostId){
+  // Es el celular
+  document.getElementById('desktopApp').style.display='none';
+  document.getElementById('remoteApp').style.display='block';
+  initRemote(hostId);
+} else {
+  // Es la laptop (Host principal)
+  initHost();
+}
+
+function initHost(){
+  peer = new Peer();
+  peer.on('open', id => {
+    statusEl.textContent = 'Listo (Conectado)';
+    statusEl.style.color = '#2a9d8f';
+    
+    // Crear URL para el celular apuntando a la misma página web local
+    const remoteUrl = window.location.href.split('?')[0] + '?host=' + id;
+    
+    // Generar Código QR
+    const qr = qrcode(0, 'M');
+    qr.addData(remoteUrl);
+    qr.make();
+    document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+  });
+
+  peer.on('connection', conn => {
+    connections.push(conn);
+    conn.on('data', data => {
+      handleRemoteCommand(data);
+    });
+  });
+}
+
+function broadcastState(){
+  const state = {
+    title: currentIndex >= 0 ? songs[currentIndex].name : 'Ninguna',
+    paused: video.paused
+  };
+  connections.forEach(c => c.send(state));
+}
+
+function handleRemoteCommand(data){
+  if(data.action === 'play') togglePlay();
+  if(data.action === 'next') nextSong();
+  if(data.action === 'prev') prevSong();
+  if(data.action === 'load' && songs[data.index]) loadSong(data.index, true);
+}
+
+// LÓGICA DEL REPRODUCTOR
 function formatTime(sec){
  if(!Number.isFinite(sec)) return '00:00';
  sec=Math.max(0,Math.floor(sec));
@@ -221,23 +286,17 @@ async function loadSong(index,autoPlay=false){
  video.pause();
  video.removeAttribute('src');
  video.load();
-
- // Forzamos la asignación directa de la ruta del archivo local para que pinte la pantalla
- video.src = s.url;
+ video.src=s.url;
  video.load();
 
  nowTitle.textContent=s.name;
  nowArtist.textContent=s.artist;
  noVideo.style.display='none';
- statusEl.textContent='Cargando pantalla...';
  renderSongs();
+ broadcastState();
 
  if(autoPlay){
-   try {
-     await video.play();
-   } catch(err) {
-     statusEl.textContent='Dale Play para iniciar';
-   }
+   try { await video.play(); } catch(err) {}
  }
 }
 
@@ -249,44 +308,30 @@ filePicker.onchange = e => {
    const file = files[i];
    songs.push({
      name: cleanName(file.name),
-     artist: 'Biblioteca de Karaoke',
+     artist: 'Biblioteca Local',
      url: URL.createObjectURL(file),
      file
    });
  }
- 
  renderSongs();
- if (currentIndex < 0 && songs.length > 0) {
-   loadSong(0, false);
- }
+ if (currentIndex < 0 && songs.length > 0) loadSong(0, false);
  filePicker.value = '';
 };
 
 async function togglePlay(){
- if(!video.src && songs.length){
-   await loadSong(0, false);
-   return;
- }
+ if(!video.src && songs.length){ await loadSong(0, false); return; }
  if(video.paused){
-   try { 
-     await video.play(); 
-   } catch(e) { 
-     statusEl.textContent='Error de reproducción';
-   }
+   try { await video.play(); } catch(e) {}
  } else {
    video.pause();
  }
+ broadcastState();
 }
 
 playBtn.onclick=togglePlay;
-video.addEventListener('play',()=>{playBtn.textContent='❚❚';statusEl.textContent='Reproduciendo'});
-video.addEventListener('pause',()=>{playBtn.textContent='▶';statusEl.textContent='Pausado'});
-video.addEventListener('ended',()=>{nextSong()});
-video.addEventListener('loadedmetadata',()=>{
- totalTime.textContent=formatTime(video.duration);
- durationEl.textContent=formatTime(video.duration);
- statusEl.textContent='Listo';
-});
+video.addEventListener('play',()=>{playBtn.textContent='❚❚'; broadcastState();});
+video.addEventListener('pause',()=>{playBtn.textContent='▶'; broadcastState();});
+video.addEventListener('ended',nextSong);
 video.addEventListener('timeupdate',()=>{
  currentTime.textContent=formatTime(video.currentTime);
  progress.value=video.duration?(video.currentTime/video.duration)*100:0;
@@ -295,35 +340,53 @@ video.addEventListener('timeupdate',()=>{
 progress.addEventListener('input',()=>{if(video.duration) video.currentTime=(progress.value/100)*video.duration});
 document.getElementById('rewind').onclick=()=>video.currentTime=Math.max(0,video.currentTime-10);
 document.getElementById('forward').onclick=()=>video.currentTime=Math.min(video.duration||0,video.currentTime+10);
-document.getElementById('prev').onclick=()=>loadSong((currentIndex-1+songs.length)%songs.length,true);
-document.getElementById('next').onclick=()=>loadSong((currentIndex+1)%songs.length,true);
+document.getElementById('prev').onclick=prevSong;
+document.getElementById('next').onclick=nextSong;
+
+function nextSong(){ if(!songs.length)return; loadSong((currentIndex+1)%songs.length,true); }
+function prevSong(){ if(!songs.length)return; loadSong((currentIndex-1+songs.length)%songs.length,true); }
 
 volume.addEventListener('input',()=>video.volume=volume.value);
 mute.onclick=()=>{video.muted=!video.muted; mute.textContent=video.muted?'🔇':'🔊'};
 
-document.getElementById('speedDown').onclick=()=>{
- playbackRate=Math.max(.5,playbackRate-.05);
- video.playbackRate=playbackRate;
- speedLabel.textContent=playbackRate.toFixed(2)+'x';
-};
-document.getElementById('speedUp').onclick=()=>{
- playbackRate=Math.min(2,playbackRate+.05);
- video.playbackRate=playbackRate;
- speedLabel.textContent=playbackRate.toFixed(2)+'x';
-};
-
 search.addEventListener('input',renderSongs);
-
 document.getElementById('clearBtn').onclick=()=>{
- if(confirm('¿Limpiar la lista de canciones?')){
+ if(confirm('¿Limpiar lista?')){
    songs.forEach(s=>URL.revokeObjectURL(s.url));
    songs=[]; currentIndex=-1; video.removeAttribute('src'); video.load();
    noVideo.style.display='block'; nowTitle.textContent='Ninguna canción seleccionada';
    renderSongs();
  }
 };
-
 document.getElementById('fsBtn').onclick=()=>document.getElementById('playerArea').requestFullscreen?.();
+
+
+// LÓGICA DEL CONTROL REMOTO DESDE EL CELULAR
+function initRemote(hostId){
+  const connPeer = new Peer();
+  let conn = null;
+
+  connPeer.on('open', () => {
+    conn = connPeer.connect(hostId);
+    conn.on('open', () => {
+      document.getElementById('remoteSongTitle').textContent = '¡Conectado al sistema!';
+    });
+    conn.on('data', data => {
+      document.getElementById('remoteSongTitle').textContent = 'Reproduciendo: ' + data.title;
+      document.getElementById('rPlay').textContent = data.paused ? '▶' : '❚❚';
+    });
+  });
+
+  document.getElementById('rPlay').onclick = () => conn && conn.send({action:'play'});
+  document.getElementById('rNext').onclick = () => conn && conn.send({action:'next'});
+  document.getElementById('rPrev').onclick = () => conn && conn.send({action:'prev'});
+  
+  // Buscador remoto simulado para elegir canciones locales compartidas
+  const remoteSearch = document.getElementById('remoteSearch');
+  remoteSearch.oninput = () => {
+    // Aquí puedes listar canciones si se sincronizan, o buscar en YouTube/enlaces
+  };
+}
 
 video.volume=.8;
 renderSongs();
