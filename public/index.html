@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b12">
-<title>Karaoke Player - Pro</title>
+<title>Karaoke Player</title>
 <style>
 *{box-sizing:border-box}
 :root{
@@ -99,19 +99,18 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
   <aside class="sidebar">
     <div class="side-title"><span>Biblioteca</span><span class="count" id="count">0 canciones</span></div>
     <label class="upload" for="filePicker">＋ Agregar videos</label>
-    <input id="filePicker" class="file-input" type="file" accept="video/*,.mkv,.avi,.mp4" multiple>
+    <input id="filePicker" class="file-input" type="file" accept="video/*" multiple>
     <div id="songList"></div>
-    <div id="empty" class="empty">Agrega tus videos de karaoke para comenzar.</div>
+    <div id="empty" class="empty">Haz clic en "Agregar videos" para elegir tus karaokes.</div>
   </aside>
 
   <section class="player-area" id="playerArea">
     <div class="video-wrap">
-      <!-- Forzamos controles nativos y ruta limpia -->
       <video id="video" playsinline preload="auto" controls></video>
       <div class="no-video" id="noVideo">
         <div class="mic">🎤</div>
-        <h2>Selecciona una canción</h2>
-        <p>Tus videos aparecerán aquí listos para cantar.</p>
+        <h2>Listo para cantar</h2>
+        <p>Selecciona un video de la izquierda para comenzar.</p>
       </div>
     </div>
     <div class="now-playing">
@@ -124,13 +123,13 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
     <div class="side-title">Información</div>
     <div class="right-content">
       <div class="info-card">
-        <h3>Estado del Sistema</h3>
-        <div class="info-row"><span>Estado</span><b id="status">Detenido</b></div>
+        <h3>Estado</h3>
+        <div class="info-row"><span>Reproductor</span><b id="status">En espera</b></div>
         <div class="info-row"><span>Duración</span><b id="duration">00:00</b></div>
         <div class="info-row"><span>Velocidad</span><b id="speedLabel">1.00x</b></div>
       </div>
       <div class="info-card">
-        <h3>Controles de Velocidad</h3>
+        <h3>Ajustes</h3>
         <div class="queue-controls">
           <button id="speedDown">− Lento</button>
           <button id="speedUp">+ Rápido</button>
@@ -220,21 +219,24 @@ async function loadSong(index,autoPlay=false){
  const s=songs[index];
 
  video.pause();
- video.src=s.url;
+ video.removeAttribute('src');
+ video.load();
+
+ // Forzamos la asignación directa de la ruta del archivo local para que pinte la pantalla
+ video.src = s.url;
  video.load();
 
  nowTitle.textContent=s.name;
  nowArtist.textContent=s.artist;
  noVideo.style.display='none';
- statusEl.textContent='Cargando video...';
+ statusEl.textContent='Cargando pantalla...';
  renderSongs();
 
  if(autoPlay){
    try {
      await video.play();
    } catch(err) {
-     statusEl.textContent='Presiona Play para iniciar';
-     console.warn('Autoplay bloqueado o archivo pesado:', err);
+     statusEl.textContent='Dale Play para iniciar';
    }
  }
 }
@@ -245,12 +247,10 @@ filePicker.onchange = e => {
  
  for (let i = 0; i < files.length; i++) {
    const file = files[i];
-   // Forzamos el blob asegurando el tipo video genérico para que el navegador loacepte
-   const safeBlob = new Blob([file], { type: file.type || 'video/mp4' });
    songs.push({
      name: cleanName(file.name),
-     artist: 'Biblioteca Local',
-     url: URL.createObjectURL(safeBlob),
+     artist: 'Biblioteca de Karaoke',
+     url: URL.createObjectURL(file),
      file
    });
  }
@@ -268,7 +268,11 @@ async function togglePlay(){
    return;
  }
  if(video.paused){
-   try { await video.play(); } catch(e) { alert('El navegador no pudo abrir el video. Puede que el formato de hace 10 años sea incompatible con este navegador.'); }
+   try { 
+     await video.play(); 
+   } catch(e) { 
+     statusEl.textContent='Error de reproducción';
+   }
  } else {
    video.pause();
  }
@@ -282,10 +286,6 @@ video.addEventListener('loadedmetadata',()=>{
  totalTime.textContent=formatTime(video.duration);
  durationEl.textContent=formatTime(video.duration);
  statusEl.textContent='Listo';
-});
-video.addEventListener('error',()=>{
- statusEl.textContent='Error de formato';
- alert('Este video en específico usa un formato muy antiguo que tu navegador actual no lee. Prueba con otro de tus archivos.');
 });
 video.addEventListener('timeupdate',()=>{
  currentTime.textContent=formatTime(video.currentTime);
@@ -315,7 +315,7 @@ document.getElementById('speedUp').onclick=()=>{
 search.addEventListener('input',renderSongs);
 
 document.getElementById('clearBtn').onclick=()=>{
- if(confirm('¿Limpiar todo?')){
+ if(confirm('¿Limpiar la lista de canciones?')){
    songs.forEach(s=>URL.revokeObjectURL(s.url));
    songs=[]; currentIndex=-1; video.removeAttribute('src'); video.load();
    noVideo.style.display='block'; nowTitle.textContent='Ninguna canción seleccionada';
