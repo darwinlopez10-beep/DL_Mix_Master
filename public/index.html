@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prestige Tracks Player</title>
     <style>
-        /* Estilos Globales Integrados */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -71,6 +70,7 @@
             font-size: 0.75rem;
             cursor: pointer;
             font-weight: 600;
+            transition: background 0.2s;
         }
 
         .top-btn:hover {
@@ -161,7 +161,7 @@
         }
 
         .playlist-scroll {
-            max-height: 180px;
+            max-height: 250px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -170,9 +170,10 @@
 
         .track-list-item {
             font-size: 0.8rem;
-            padding: 0.3rem 0.5rem;
+            padding: 0.4rem 0.6rem;
             color: #8b949e;
             border-radius: 4px;
+            cursor: pointer;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -488,8 +489,8 @@
                 <span class="sub-badge">DJ Console v1.0</span>
             </div>
             <div class="top-controls">
-                <button class="top-btn active">Sync On</button>
-                <button class="top-btn panic">PANIC</button>
+                <button class="top-btn active" id="syncBtn">Sync On</button>
+                <button class="top-btn panic" id="panicBtn">PANIC</button>
             </div>
         </header>
 
@@ -498,24 +499,24 @@
             <!-- Sidebar Izquierdo -->
             <aside class="sidebar">
                 <div class="search-box">
-                    <input type="text" placeholder="Buscar pistas...">
+                    <input type="text" id="searchInput" placeholder="Buscar pistas...">
                 </div>
                 <div class="menu-category">
                     <h3>BIBLIOTECA</h3>
-                    <div class="menu-item active"><span>Todas las Pistas</span> <span class="count">24</span></div>
-                    <div class="menu-item"><span>Favoritas</span> <span class="count">8</span></div>
+                    <div class="menu-item active" id="menuAll"><span>Todas las Pistas</span> <span class="count" id="countAll">3</span></div>
+                    <div class="menu-item" id="menuFavs"><span>Favoritas</span> <span class="count" id="countFavs">1</span></div>
                 </div>
                 <div class="menu-category">
                     <h3>LISTA DE REPRODUCCIÓN</h3>
-                    <div class="playlist-scroll">
-                        <div class="track-list-item">Pista 01 - Intro Mix</div>
-                        <div class="track-list-item">Pista 02 - Baseline Heavy</div>
-                        <div class="track-list-item">Pista 03 - Summer Vibe</div>
+                    <div class="playlist-scroll" id="playlistContainer">
+                        <div class="track-list-item" data-name="Pista 01 - Intro Mix">Pista 01 - Intro Mix</div>
+                        <div class="track-list-item" data-name="Pista 02 - Baseline Heavy">Pista 02 - Baseline Heavy</div>
+                        <div class="track-list-item" data-name="Pista 03 - Summer Vibe">Pista 03 - Summer Vibe</div>
                     </div>
                 </div>
             </aside>
 
-            <!-- Consola Central (Decks y Mezclador) -->
+            <!-- Consola Central -->
             <main class="console-area">
                 <div class="live-header">
                     <h2>Consola en Vivo</h2>
@@ -527,17 +528,17 @@
                     <section class="deck-panel">
                         <div class="deck-header">
                             <span class="deck-badge red">DECK A</span>
-                            <span class="track-status">Cargado</span>
+                            <span class="track-status" id="statusA">Cargado</span>
                         </div>
                         <div class="waveform-box">
                             <div class="waveform-placeholder">
-                                <p>Onda de Audio A</p>
+                                <p id="trackNameA">Pista 01 - Intro Mix</p>
                                 <div class="wave-lines">||||||||||||||||||||||||||||</div>
                             </div>
                         </div>
                         <div class="deck-controls-row">
-                            <button class="ctrl-btn">CUE</button>
-                            <button class="ctrl-btn primary">PLAY</button>
+                            <button class="ctrl-btn" id="cueA">CUE</button>
+                            <button class="ctrl-btn primary" id="playA">PLAY</button>
                         </div>
                         <div class="deck-sliders-row">
                             <div class="slider-group">
@@ -550,13 +551,13 @@
                             </div>
                         </div>
                         <div class="key-lock-bar">
-                            <button class="key-lock-btn active">KEY LOCK</button>
+                            <button class="key-lock-btn active" id="keyA">KEY LOCK</button>
                         </div>
                     </section>
 
                     <!-- Mezclador Central -->
                     <div class="mixer-center">
-                        <button class="action-btn">FX Master</button>
+                        <button class="action-btn" id="fxBtn">FX Master</button>
                         <div class="mixer-section">
                             <span class="mixer-title">ECUALIZADOR</span>
                             <div class="faders-box">
@@ -588,17 +589,17 @@
                     <section class="deck-panel">
                         <div class="deck-header">
                             <span class="deck-badge blue">DECK B</span>
-                            <span class="track-status">Cargado</span>
+                            <span class="track-status" id="statusB">Cargado</span>
                         </div>
                         <div class="waveform-box">
                             <div class="waveform-placeholder">
-                                <p>Onda de Audio B</p>
+                                <p id="trackNameB">Pista 02 - Baseline Heavy</p>
                                 <div class="wave-lines">||||||||||||||||||||||||||||</div>
                             </div>
                         </div>
                         <div class="deck-controls-row">
-                            <button class="ctrl-btn">CUE</button>
-                            <button class="ctrl-btn primary">PLAY</button>
+                            <button class="ctrl-btn" id="cueB">CUE</button>
+                            <button class="ctrl-btn primary" id="playB">PLAY</button>
                         </div>
                         <div class="deck-sliders-row">
                             <div class="slider-group">
@@ -611,7 +612,7 @@
                             </div>
                         </div>
                         <div class="key-lock-bar">
-                            <button class="key-lock-btn active">KEY LOCK</button>
+                            <button class="key-lock-btn active" id="keyB">KEY LOCK</button>
                         </div>
                     </section>
                 </div>
@@ -623,5 +624,67 @@
             <p>PRESTIGE TRACKS SYSTEM OPERATIONAL — LISTO PARA MEZCLAR</p>
         </footer>
     </div>
+
+    <script>
+        // Funcionalidad interactiva de búsqueda
+        const searchInput = document.getElementById('searchInput');
+        const trackItems = document.querySelectorAll('.track-list-item');
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            trackItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(term)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Interactividad de botones de Play / Pause en Decks
+        const playA = document.getElementById('playA');
+        const statusA = document.getElementById('statusA');
+        playA.addEventListener('click', () => {
+            if (playA.textContent === 'PLAY') {
+                playA.textContent = 'PAUSE';
+                playA.style.backgroundColor = '#da3633';
+                statusA.textContent = 'Reproduciendo';
+                statusA.style.color = '#58a6ff';
+            } else {
+                playA.textContent = 'PLAY';
+                playA.style.backgroundColor = '#238636';
+                statusA.textContent = 'En Pausa';
+                statusA.style.color = '#8b949e';
+            }
+        });
+
+        const playB = document.getElementById('playB');
+        const statusB = document.getElementById('statusB');
+        playB.addEventListener('click', () => {
+            if (playB.textContent === 'PLAY') {
+                playB.textContent = 'PAUSE';
+                playB.style.backgroundColor = '#da3633';
+                statusB.textContent = 'Reproduciendo';
+                statusB.style.color = '#58a6ff';
+            } else {
+                playB.textContent = 'PLAY';
+                playB.style.backgroundColor = '#238636';
+                statusB.textContent = 'En Pausa';
+                statusB.style.color = '#8b949e';
+            }
+        });
+
+        // Botón PANIC
+        document.getElementById('panicBtn').addEventListener('click', () => {
+            playA.textContent = 'PLAY';
+            playA.style.backgroundColor = '#238636';
+            statusA.textContent = 'Detenido (Panic)';
+            playB.textContent = 'PLAY';
+            playB.style.backgroundColor = '#238636';
+            statusB.textContent = 'Detenido (Panic)';
+            alert('¡PANIC ACTIVADO! Todos los decks se han detenido.');
+        });
+    </script>
 </body>
 </html>
