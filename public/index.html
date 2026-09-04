@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#080b12">
-<title>Karaoke Player</title>
+<title>Karaoke Player - Pro</title>
 <style>
 *{box-sizing:border-box}
 :root{
@@ -22,8 +22,8 @@ header{display:flex;align-items:center;gap:18px;padding:0 20px;background:#0d121
 .search input{width:100%;background:#171e2b;border:1px solid var(--border);border-radius:9px;color:white;padding:11px 15px;outline:none}
 .search input:focus{border-color:var(--accent)}
 .header-actions{margin-left:auto;display:flex;gap:8px}
-.icon-btn,.small-btn{background:#171e2b;border:1px solid var(--border);border-radius:8px;padding:9px 12px}
-.icon-btn:hover,.small-btn:hover{background:#202a3b}
+.icon-btn{background:#171e2b;border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.icon-btn:hover{background:#202a3b}
 .main{min-height:0;display:grid;grid-template-columns:310px 1fr 310px}
 .sidebar{background:var(--panel);border-right:1px solid var(--border);min-height:0;overflow:auto}
 .rightbar{border-left:1px solid var(--border);border-right:0}
@@ -88,7 +88,7 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
 <div class="app">
 <header>
   <div class="logo">🎤 <span>Karaoke</span> Player</div>
-  <div class="search"><input id="search" type="search" placeholder="Buscar canción o artista..."></div>
+  <div class="search"><input id="search" type="search" placeholder="Buscar canción..."></div>
   <div class="header-actions">
     <button class="icon-btn" id="clearBtn" title="Limpiar biblioteca">🗑</button>
     <button class="icon-btn" id="fsBtn" title="Pantalla completa">⛶</button>
@@ -99,18 +99,19 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
   <aside class="sidebar">
     <div class="side-title"><span>Biblioteca</span><span class="count" id="count">0 canciones</span></div>
     <label class="upload" for="filePicker">＋ Agregar videos</label>
-    <input id="filePicker" class="file-input" type="file" accept="video/*" multiple>
+    <input id="filePicker" class="file-input" type="file" accept="video/*,.mkv,.avi,.mp4" multiple>
     <div id="songList"></div>
     <div id="empty" class="empty">Agrega tus videos de karaoke para comenzar.</div>
   </aside>
 
   <section class="player-area" id="playerArea">
     <div class="video-wrap">
-      <video id="video" playsinline preload="auto" crossorigin="anonymous" controls></video>
+      <!-- Forzamos controles nativos y ruta limpia -->
+      <video id="video" playsinline preload="auto" controls></video>
       <div class="no-video" id="noVideo">
         <div class="mic">🎤</div>
         <h2>Selecciona una canción</h2>
-        <p>Agrega tus videos de karaoke y selecciónalos desde la biblioteca.</p>
+        <p>Tus videos aparecerán aquí listos para cantar.</p>
       </div>
     </div>
     <div class="now-playing">
@@ -123,24 +124,17 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
     <div class="side-title">Información</div>
     <div class="right-content">
       <div class="info-card">
-        <h3>Reproducción</h3>
+        <h3>Estado del Sistema</h3>
         <div class="info-row"><span>Estado</span><b id="status">Detenido</b></div>
         <div class="info-row"><span>Duración</span><b id="duration">00:00</b></div>
         <div class="info-row"><span>Velocidad</span><b id="speedLabel">1.00x</b></div>
       </div>
       <div class="info-card">
-        <h3>Controles</h3>
+        <h3>Controles de Velocidad</h3>
         <div class="queue-controls">
-          <button id="speedDown">− Velocidad</button>
-          <button id="speedUp">+ Velocidad</button>
+          <button id="speedDown">− Lento</button>
+          <button id="speedUp">+ Rápido</button>
         </div>
-      </div>
-      <div class="info-card">
-        <h3>Atajos de teclado</h3>
-        <div class="info-row"><span>Reproducir / Pausa</span><b>Espacio</b></div>
-        <div class="info-row"><span>Anterior</span><b>←</b></div>
-        <div class="info-row"><span>Siguiente</span><b>→</b></div>
-        <div class="info-row"><span>Pantalla completa</span><b>F</b></div>
       </div>
     </div>
   </aside>
@@ -153,11 +147,11 @@ input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
     <span class="time" id="totalTime">00:00</span>
   </div>
   <div class="controls">
-    <button class="ctrl" id="prev" title="Anterior">⏮</button>
-    <button class="ctrl" id="rewind" title="Retroceder 10 segundos">↶</button>
-    <button class="ctrl play" id="play" title="Reproducir">▶</button>
-    <button class="ctrl" id="forward" title="Avanzar 10 segundos">↷</button>
-    <button class="ctrl" id="next" title="Siguiente">⏭</button>
+    <button class="ctrl" id="prev">⏮</button>
+    <button class="ctrl" id="rewind">↶</button>
+    <button class="ctrl play" id="play">▶</button>
+    <button class="ctrl" id="forward">↷</button>
+    <button class="ctrl" id="next">⏭</button>
   </div>
   <div class="footer-right">
     <div class="volume">🔊 <input id="volume" type="range" min="0" max="1" step=".01" value=".8"></div>
@@ -193,8 +187,8 @@ let playbackRate=1;
 function formatTime(sec){
  if(!Number.isFinite(sec)) return '00:00';
  sec=Math.max(0,Math.floor(sec));
- const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
- return h ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+ const m=Math.floor(sec/60),s=sec%60;
+ return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 function renderSongs(){
@@ -225,38 +219,38 @@ async function loadSong(index,autoPlay=false){
  currentIndex=index;
  const s=songs[index];
 
- try { video.pause(); } catch(e) {}
-
+ video.pause();
  video.src=s.url;
  video.load();
 
  nowTitle.textContent=s.name;
  nowArtist.textContent=s.artist;
  noVideo.style.display='none';
- statusEl.textContent='Cargando...';
+ statusEl.textContent='Cargando video...';
  renderSongs();
 
  if(autoPlay){
    try {
      await video.play();
    } catch(err) {
-     statusEl.textContent='Listo para reproducir';
-     console.warn('El navegador no pudo iniciar automáticamente el video:', err);
+     statusEl.textContent='Presiona Play para iniciar';
+     console.warn('Autoplay bloqueado o archivo pesado:', err);
    }
  }
 }
 
-// Selector de archivos totalmente blindado
 filePicker.onchange = e => {
  const files = e.target.files;
  if (!files || files.length === 0) return;
  
  for (let i = 0; i < files.length; i++) {
    const file = files[i];
+   // Forzamos el blob asegurando el tipo video genérico para que el navegador loacepte
+   const safeBlob = new Blob([file], { type: file.type || 'video/mp4' });
    songs.push({
      name: cleanName(file.name),
-     artist: 'Archivo local',
-     url: URL.createObjectURL(file),
+     artist: 'Biblioteca Local',
+     url: URL.createObjectURL(safeBlob),
      file
    });
  }
@@ -269,19 +263,12 @@ filePicker.onchange = e => {
 };
 
 async function togglePlay(){
- if(!video.src){
-   if(songs.length) await loadSong(currentIndex >= 0 ? currentIndex : 0, false);
-   else return;
+ if(!video.src && songs.length){
+   await loadSong(0, false);
+   return;
  }
-
  if(video.paused){
-   try {
-     await video.play();
-   } catch(err) {
-     statusEl.textContent='No se puede reproducir este video';
-     console.error('Error al reproducir:', err);
-     alert('El navegador no puede reproducir este archivo. Prueba con un video MP4.');
-   }
+   try { await video.play(); } catch(e) { alert('El navegador no pudo abrir el video. Puede que el formato de hace 10 años sea incompatible con este navegador.'); }
  } else {
    video.pause();
  }
@@ -290,21 +277,15 @@ async function togglePlay(){
 playBtn.onclick=togglePlay;
 video.addEventListener('play',()=>{playBtn.textContent='❚❚';statusEl.textContent='Reproduciendo'});
 video.addEventListener('pause',()=>{playBtn.textContent='▶';statusEl.textContent='Pausado'});
-video.addEventListener('ended',()=>{statusEl.textContent='Finalizado';nextSong()});
+video.addEventListener('ended',()=>{nextSong()});
 video.addEventListener('loadedmetadata',()=>{
  totalTime.textContent=formatTime(video.duration);
  durationEl.textContent=formatTime(video.duration);
  statusEl.textContent='Listo';
 });
-video.addEventListener('canplay',()=>{
- if(video.paused) statusEl.textContent='Listo para reproducir';
-});
 video.addEventListener('error',()=>{
- statusEl.textContent='Error de video';
- console.error('HTML5 video error:', video.error);
-});
-video.addEventListener('stalled',()=>{
- statusEl.textContent='Esperando video...';
+ statusEl.textContent='Error de formato';
+ alert('Este video en específico usa un formato muy antiguo que tu navegador actual no lee. Prueba con otro de tus archivos.');
 });
 video.addEventListener('timeupdate',()=>{
  currentTime.textContent=formatTime(video.currentTime);
@@ -314,37 +295,19 @@ video.addEventListener('timeupdate',()=>{
 progress.addEventListener('input',()=>{if(video.duration) video.currentTime=(progress.value/100)*video.duration});
 document.getElementById('rewind').onclick=()=>video.currentTime=Math.max(0,video.currentTime-10);
 document.getElementById('forward').onclick=()=>video.currentTime=Math.min(video.duration||0,video.currentTime+10);
-document.getElementById('prev').onclick=prevSong;
-document.getElementById('next').onclick=nextSong;
+document.getElementById('prev').onclick=()=>loadSong((currentIndex-1+songs.length)%songs.length,true);
+document.getElementById('next').onclick=()=>loadSong((currentIndex+1)%songs.length,true);
 
-function nextSong(){
- if(!songs.length)return;
- loadSong((currentIndex+1)%songs.length,true);
-}
-function prevSong(){
- if(!songs.length)return;
- loadSong((currentIndex-1+songs.length)%songs.length,true);
-}
-
-function updateVolume(){
- video.volume=volume.value;
- video.muted=false;
- mute.textContent='🔊';
-}
-volume.addEventListener('input',updateVolume);
-
-mute.onclick=()=>{
- video.muted=!video.muted;
- mute.textContent=video.muted?'🔇':'🔊';
-};
+volume.addEventListener('input',()=>video.volume=volume.value);
+mute.onclick=()=>{video.muted=!video.muted; mute.textContent=video.muted?'🔇':'🔊'};
 
 document.getElementById('speedDown').onclick=()=>{
- playbackRate=Math.max(.5,Math.round((playbackRate-.05)*100)/100);
+ playbackRate=Math.max(.5,playbackRate-.05);
  video.playbackRate=playbackRate;
  speedLabel.textContent=playbackRate.toFixed(2)+'x';
 };
 document.getElementById('speedUp').onclick=()=>{
- playbackRate=Math.min(2,Math.round((playbackRate+.05)*100)/100);
+ playbackRate=Math.min(2,playbackRate+.05);
  video.playbackRate=playbackRate;
  speedLabel.textContent=playbackRate.toFixed(2)+'x';
 };
@@ -352,30 +315,15 @@ document.getElementById('speedUp').onclick=()=>{
 search.addEventListener('input',renderSongs);
 
 document.getElementById('clearBtn').onclick=()=>{
- if(!songs.length)return;
- if(confirm('¿Eliminar todos los videos de la biblioteca?')){
+ if(confirm('¿Limpiar todo?')){
    songs.forEach(s=>URL.revokeObjectURL(s.url));
-   songs=[];currentIndex=-1;video.removeAttribute('src');video.load();
-   noVideo.style.display='block';nowTitle.textContent='Ninguna canción seleccionada';
-   nowArtist.textContent='Karaoke Player';statusEl.textContent='Detenido';
+   songs=[]; currentIndex=-1; video.removeAttribute('src'); video.load();
+   noVideo.style.display='block'; nowTitle.textContent='Ninguna canción seleccionada';
    renderSongs();
  }
 };
 
-async function fullscreen(){
- const el=document.getElementById('playerArea');
- if(document.fullscreenElement) await document.exitFullscreen();
- else await el.requestFullscreen?.();
-}
-document.getElementById('fsBtn').onclick=fullscreen;
-
-document.addEventListener('keydown',e=>{
- if(e.target.tagName==='INPUT')return;
- if(e.code==='Space'){e.preventDefault();togglePlay()}
- else if(e.key==='ArrowRight'){e.preventDefault();nextSong()}
- else if(e.key==='ArrowLeft'){e.preventDefault();prevSong()}
- else if(e.key.toLowerCase()==='f') fullscreen();
-});
+document.getElementById('fsBtn').onclick=()=>document.getElementById('playerArea').requestFullscreen?.();
 
 video.volume=.8;
 renderSongs();
