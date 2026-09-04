@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080b12">
-<title>Karaoke Station Pro + YouTube</title>
+<title>Karaoke Station Pro Complete</title>
+<!-- Librería PeerJS para el Control Remoto QR -->
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<!-- Librería para el Código QR -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box}
@@ -13,90 +14,355 @@
   --bg:#080b12;--panel:#111722;--panel2:#171e2b;--border:#273143;
   --text:#f4f7fb;--muted:#8e9bad;--accent:#e63946;--accent2:#ff5964;
 }
-body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;height:100vh;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;height:100vh;overflow:hidden}
 button,input{font:inherit}
 button{border:0;cursor:pointer;color:var(--text)}
 .app{height:100vh;display:grid;grid-template-rows:64px 1fr 82px}
 header{display:flex;align-items:center;gap:18px;padding:0 20px;background:#0d121b;border-bottom:1px solid var(--border)}
 .logo{font-size:21px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
 .logo span{color:var(--accent)}
-.search{flex:1;max-width:500px;position:relative}
+.search{flex:1;max-width:500px}
 .search input{width:100%;background:#171e2b;border:1px solid var(--border);border-radius:9px;color:white;padding:11px 15px;outline:none}
 .search input:focus{border-color:var(--accent)}
 .header-actions{margin-left:auto;display:flex;gap:8px}
-.icon-btn{background:#171e2b;border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.icon-btn{background:#171e2b;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:16px}
 .icon-btn:hover{background:#202a3b}
+
 .main{min-height:0;display:grid;grid-template-columns:310px 1fr 310px}
 .sidebar{background:var(--panel);border-right:1px solid var(--border);min-height:0;overflow:auto}
 .rightbar{border-left:1px solid var(--border);border-right:0}
 .side-title{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 12px;font-weight:700}
 .count{color:var(--muted);font-size:12px}
+
 .song{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;display:flex;gap:11px;align-items:center}
 .song:hover{background:#171e2b}
-.song.active{background:#25151a;border-left:3px solid var(--accent);padding-left:11px}
-.thumb{width:58px;height:42px;border-radius:5px;background:#252e3d;display:grid;place-items:center;color:#77849a;flex:none;font-size:18px}
+.song.active{background:#25151a;border-left:3px solid var(--accent)}
+.thumb{width:45px;height:35px;border-radius:5px;background:#252e3d;display:grid;place-items:center;color:#77849a;flex:none}
 .song-info{min-width:0}
 .song-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.artist{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.empty{padding:35px 20px;text-align:center;color:var(--muted);line-height:1.6}
-.player-area{min-width:0;min-height:0;display:flex;flex-direction:column;background:#05070b}
+.artist{font-size:12px;color:var(--muted);margin-top:2px}
+.empty{padding:25px 15px;text-align:center;color:var(--muted);font-size:13px}
+
+.player-area{min-width:0;min-height:0;display:flex;flex-direction:column;background:#000}
 .video-wrap{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;background:#000}
-video, #ytPlayerContainer{width:100%;height:100%;background:#000;display:block;position:absolute;top:0;left:0}
-#ytPlayerContainer {display:none; border:none;}
-.no-video{position:absolute;text-align:center;color:#657187;pointer-events:none;z-index:5}
-.no-video .mic{font-size:55px;margin-bottom:12px}
-.no-video h2{margin:0;color:#aab4c4;font-size:20px}
-.no-video p{font-size:13px}
+video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.no-video{position:absolute;text-align:center;color:#657187;pointer-events:none}
+.no-video .mic{font-size:50px;margin-bottom:8px}
+
 .now-playing{padding:13px 18px;background:#0d121b;border-top:1px solid var(--border)}
-.now-title{font-weight:700}.now-artist{color:var(--muted);font-size:13px;margin-top:3px}
+.now-title{font-weight:700}.now-artist{color:var(--muted);font-size:13px;margin-top:2px}
+
 .right-content{padding:0 16px 20px}
 .info-card{background:#171e2b;border:1px solid var(--border);border-radius:10px;padding:15px;margin-bottom:14px}
-.info-card h3{font-size:14px;margin:0 0 12px}
-.info-row{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.info-row:last-child{border-bottom:0}
-.info-row b{color:var(--text)}
+.info-card h3{font-size:14px;margin:0 0 10px}
 .file-input{display:none}
-.upload{display:block;text-align:center;background:var(--accent);padding:11px;border-radius:8px;font-weight:700;margin-bottom:10px}
+.upload{display:block;text-align:center;background:var(--accent);padding:10px;border-radius:8px;font-weight:700;margin:10px 15px;cursor:pointer}
 .upload:hover{background:var(--accent2)}
-.qr-box{background:#fff;padding:12px;border-radius:8px;text-align:center;margin-top:10px}
+.qr-box{background:#fff;padding:10px;border-radius:8px;text-align:center;margin-top:10px}
 #qrcode img{display:block;margin:0 auto}
+
 footer{background:#0d121b;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;padding:0 18px;gap:20px}
 .progress-area{display:flex;align-items:center;gap:10px}
-.time{font-size:11px;color:var(--muted);width:42px;text-align:center}
+.time{font-size:11px;color:var(--muted);width:40px;text-align:center}
 input[type=range]{accent-color:var(--accent);width:100%;cursor:pointer}
-.controls{display:flex;justify-content:center;align-items:center;gap:9px}
-.ctrl{width:40px;height:40px;border-radius:50%;background:#1a2230;border:1px solid var(--border);font-size:16px}
+.controls{display:flex;justify-content:center;align-items:center;gap:10px}
+.ctrl{width:40px;height:40px;border-radius:50%;background:#1a2230;border:1px solid var(--border);font-size:16px;display:grid;place-items:center}
 .ctrl:hover{background:#263247}
-.play{width:50px;height:50px;background:var(--accent);font-size:20px}
+.play{width:48px;height:48px;background:var(--accent);font-size:20px}
 .play:hover{background:var(--accent2)}
 .footer-right{display:flex;justify-content:flex-end;align-items:center;gap:10px}
-.volume{display:flex;align-items:center;gap:8px;width:150px}
-#volume{width:90px}
+.volume{display:flex;align-items:center;gap:8px;width:140px}
 
+/* MODO CONTROL REMOTO MÓVIL */
 .remote-mode { display:none; padding:20px; text-align:center; background:var(--bg); height:100vh; overflow-y:auto; }
 </style>
 </head>
 <body>
 
+<!-- VISTA PRINCIPAL (LAPTOP) -->
 <div class="app" id="desktopApp">
 <header>
   <div class="logo">🎤 <span>Karaoke</span> Station</div>
   <div class="search">
-    <input id="search" type="search" placeholder="Busca local o pega enlace/término de YouTube...">
+    <input id="search" type="search" placeholder="Filtrar canciones cargadas...">
   </div>
   <div class="header-actions">
-    <button class="icon-btn" id="clearBtn" title="Limpiar">🗑</button>
-    <button class="icon-btn" id="fsBtn" title="Pantalla completa">⛶</button>
+    <button class="icon-btn" id="clearBtn" title="Limpiar todo">🗑</button>
+    <button class="icon-btn" id="fsBtn" title="Pantalla Completa">⛶</button>
   </div>
 </header>
 
 <div class="main">
+  <!-- SIDEBAR IZQUIERDO -->
   <aside class="sidebar">
-    <div class="side-title"><span>Biblioteca</span><span class="count" id="count">0 canciones</span></div>
-    <label class="upload" for="filePicker">＋ Agregar videos locales</label>
+    <div class="side-title"><span>Canciones</span><span class="count" id="count">0 videos</span></div>
+    <label class="upload" for="filePicker">＋ Cargar Videos Locales</label>
     <input id="filePicker" class="file-input" type="file" accept="video/*" multiple>
     
-    <button class="upload" id="addYtBtn" style="background:#202a3b;margin-top:5px;">🔍 Buscar/Añadir YouTube</button>
-    
     <div id="songList"></div>
-    <div id="empty
+    <div id="empty" class="empty">Selecciona varios videos desde tu laptop para agregarlos a la lista.</div>
+  </aside>
+
+  <!-- PANTALLA PRINCIPAL DE VIDEO -->
+  <section class="player-area" id="playerArea">
+    <div class="video-wrap">
+      <video id="video" playsinline preload="auto"></video>
+      <div class="no-video" id="noVideo">
+        <div class="mic">🎤</div>
+        <h2>¡Pantalla Lista!</h2>
+        <p>Carga videos en el botón rojo o escanea el QR desde tu celular.</p>
+      </div>
+    </div>
+    <div class="now-playing">
+      <div class="now-title" id="nowTitle">Ninguna canción seleccionada</div>
+      <div class="now-artist" id="nowArtist">Karaoke System</div>
+    </div>
+  </section>
+
+  <!-- SIDEBAR DERECHO (QR CONTROL REMOTO) -->
+  <aside class="sidebar rightbar">
+    <div class="side-title">Control Remoto QR</div>
+    <div class="right-content">
+      <div class="info-card">
+        <h3>Escanea con el Teléfono</h3>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Usa la cámara del teléfono para conectarlo como control remoto:</p>
+        <div class="qr-box" id="qrcode"></div>
+        <div style="font-size:12px;margin-top:10px;text-align:center">Estado: <b id="peerStatus" style="color:#e63946">Iniciando QR...</b></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- CONTROLES INFERIORES DE LA LAPTOP -->
+<footer>
+  <div class="progress-area">
+    <span class="time" id="currentTime">00:00</span>
+    <input id="progress" type="range" min="0" max="100" value="0">
+    <span class="time" id="totalTime">00:00</span>
+  </div>
+  <div class="controls">
+    <button class="ctrl" id="prev">⏮</button>
+    <button class="ctrl" id="rewind">↶</button>
+    <button class="ctrl play" id="play">▶</button>
+    <button class="ctrl" id="forward">↷</button>
+    <button class="ctrl" id="next">⏭</button>
+  </div>
+  <div class="footer-right">
+    <div class="volume">🔊 <input id="volume" type="range" min="0" max="1" step=".01" value=".8"></div>
+    <button class="icon-btn" id="mute">🔊</button>
+  </div>
+</footer>
+</div>
+
+<!-- VISTA QUE SE MUESTRA EN EL CELULAR AL ESCANEAR EL QR -->
+<div class="remote-mode" id="remoteApp">
+  <h2 style="color:var(--accent);margin-top:15px">📱 Control Remoto Karaoke</h2>
+  <div style="background:var(--panel);padding:20px;border-radius:12px;margin:20px 0;border:1px solid var(--border)">
+    <h3 id="remoteSongTitle" style="margin:0 0 15px 0;font-size:16px">Conectando con la Laptop...</h3>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:10px">
+      <button class="ctrl" id="rPrev">⏮</button>
+      <button class="ctrl play" id="rPlay">▶</button>
+      <button class="ctrl" id="rNext">⏭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const video=document.getElementById('video');
+const filePicker=document.getElementById('filePicker');
+const songList=document.getElementById('songList');
+const empty=document.getElementById('empty');
+const search=document.getElementById('search');
+const count=document.getElementById('count');
+const noVideo=document.getElementById('noVideo');
+const nowTitle=document.getElementById('nowTitle');
+const nowArtist=document.getElementById('nowArtist');
+const statusEl=document.getElementById('peerStatus');
+const progress=document.getElementById('progress');
+const currentTime=document.getElementById('currentTime');
+const totalTime=document.getElementById('totalTime');
+const volume=document.getElementById('volume');
+const mute=document.getElementById('mute');
+const playBtn=document.getElementById('play');
+
+let songs=[];
+let currentIndex=-1;
+let peer=null;
+let connections=[];
+
+// COMPROBAR SI ES EL CELULAR
+const urlParams = new URLSearchParams(window.location.search);
+const hostId = urlParams.get('host');
+
+if(hostId){
+  document.getElementById('desktopApp').style.display='none';
+  document.getElementById('remoteApp').style.display='block';
+  initRemote(hostId);
+} else {
+  initHost();
+}
+
+function initHost(){
+  peer = new Peer();
+  peer.on('open', id => {
+    statusEl.textContent = 'Conectado';
+    statusEl.style.color = '#2a9d8f';
+    const remoteUrl = window.location.href.split('?')[0] + '?host=' + id;
+    const qr = qrcode(0, 'M');
+    qr.addData(remoteUrl);
+    qr.make();
+    document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+  });
+
+  peer.on('connection', conn => {
+    connections.push(conn);
+    conn.on('data', data => handleRemoteCommand(data));
+  });
+}
+
+function broadcastState(){
+  const state = {
+    title: currentIndex >= 0 ? songs[currentIndex].name : 'Ninguna',
+    paused: video.paused
+  };
+  connections.forEach(c => c.send(state));
+}
+
+function handleRemoteCommand(data){
+  if(data.action === 'play') togglePlay();
+  if(data.action === 'next') nextSong();
+  if(data.action === 'prev') prevSong();
+}
+
+function formatTime(sec){
+ if(!Number.isFinite(sec)) return '00:00';
+ sec=Math.max(0,Math.floor(sec));
+ const m=Math.floor(sec/60),s=sec%60;
+ return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function renderSongs(){
+ const q=search.value.toLowerCase().trim();
+ songList.innerHTML='';
+ const filtered=songs.map((s,i)=>({...s,i})).filter(s=>s.name.toLowerCase().includes(q));
+ count.textContent=`${songs.length} videos`;
+ empty.style.display=filtered.length?'none':'block';
+ filtered.forEach(s=>{
+   const el=document.createElement('div');
+   el.className='song'+(s.i===currentIndex?' active':'');
+   el.innerHTML=`<div class="thumb">▶</div><div class="song-info"><div class="song-name">${s.name}</div><div class="artist">${s.artist}</div></div>`;
+   el.onclick=()=>loadSong(s.i,true);
+   songList.appendChild(el);
+ });
+}
+
+function cleanName(name){
+ return name.replace(/\.[^/.]+$/,'').replace(/[_-]+/g,' ').trim();
+}
+
+async function loadSong(index,autoPlay=false){
+ if(!songs[index]) return;
+ currentIndex=index;
+ const s=songs[index];
+
+ video.pause();
+ video.src=s.url;
+ video.load();
+
+ nowTitle.textContent=s.name;
+ nowArtist.textContent=s.artist;
+ noVideo.style.display='none';
+ renderSongs();
+ broadcastState();
+
+ if(autoPlay){
+   try { await video.play(); } catch(err) {}
+ }
+}
+
+filePicker.onchange = e => {
+ const files = e.target.files;
+ if (!files || files.length === 0) return;
+ 
+ for (let i = 0; i < files.length; i++) {
+   const file = files[i];
+   songs.push({
+     name: cleanName(file.name),
+     artist: 'Local Video',
+     url: URL.createObjectURL(file)
+   });
+ }
+ renderSongs();
+ if (currentIndex < 0 && songs.length > 0) loadSong(0, false);
+ filePicker.value = '';
+};
+
+async function togglePlay(){
+ if(!video.src && songs.length){ await loadSong(0, false); return; }
+ if(video.paused){
+   try { await video.play(); } catch(e) {}
+ } else {
+   video.pause();
+ }
+ broadcastState();
+}
+
+playBtn.onclick=togglePlay;
+video.addEventListener('play',()=>{playBtn.textContent='❚❚'; broadcastState();});
+video.addEventListener('pause',()=>{playBtn.textContent='▶'; broadcastState();});
+video.addEventListener('ended',nextSong);
+video.addEventListener('timeupdate',()=>{
+ currentTime.textContent=formatTime(video.currentTime);
+ totalTime.textContent=formatTime(video.duration);
+ progress.value=video.duration?(video.currentTime/video.duration)*100:0;
+});
+
+progress.addEventListener('input',()=>{if(video.duration) video.currentTime=(progress.value/100)*video.duration});
+document.getElementById('rewind').onclick=()=>video.currentTime=Math.max(0,video.currentTime-10);
+document.getElementById('forward').onclick=()=>video.currentTime=Math.min(video.duration||0,video.currentTime+10);
+document.getElementById('prev').onclick=prevSong;
+document.getElementById('next').onclick=nextSong;
+
+function nextSong(){ if(!songs.length)return; loadSong((currentIndex+1)%songs.length,true); }
+function prevSong(){ if(!songs.length)return; loadSong((currentIndex-1+songs.length)%songs.length,true); }
+
+volume.addEventListener('input',()=>video.volume=volume.value);
+mute.onclick=()=>{video.muted=!video.muted; mute.textContent=video.muted?'🔇':'🔊'};
+
+search.addEventListener('input',renderSongs);
+document.getElementById('clearBtn').onclick=()=>{
+ if(confirm('¿Limpiar lista?')){
+   songs.forEach(s=>URL.revokeObjectURL(s.url));
+   songs=[]; currentIndex=-1; video.removeAttribute('src'); video.load();
+   noVideo.style.display='block'; nowTitle.textContent='Ninguna canción seleccionada';
+   renderSongs();
+ }
+};
+document.getElementById('fsBtn').onclick=()=>document.getElementById('playerArea').requestFullscreen?.();
+
+// LÓGICA DEL REMOTO (CELULAR)
+function initRemote(hostId){
+  const connPeer = new Peer();
+  let conn = null;
+
+  connPeer.on('open', () => {
+    conn = connPeer.connect(hostId);
+    conn.on('open', () => {
+      document.getElementById('remoteSongTitle').textContent = '¡Control remoto conectado!';
+    });
+    conn.on('data', data => {
+      document.getElementById('remoteSongTitle').textContent = 'Reproduciendo: ' + data.title;
+      document.getElementById('rPlay').textContent = data.paused ? '▶' : '❚❚';
+    });
+  });
+
+  document.getElementById('rPlay').onclick = () => conn && conn.send({action:'play'});
+  document.getElementById('rNext').onclick = () => conn && conn.send({action:'next'});
+  document.getElementById('rPrev').onclick = () => conn && conn.send({action:'prev'});
+}
+
+video.volume=.8;
+renderSongs();
+</script>
+</body>
+</html>
