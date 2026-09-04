@@ -213,4 +213,172 @@ function renderSongs(){
 }
 
 function escapeHtml(str){
- return str.replace
+ return str.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+function cleanName(name){
+ return name.replace(/\.[^/.]+$/,'').replace(/[_-]+/g,' ').trim();
+}
+
+async function loadSong(index,autoPlay=false){
+ if(!songs[index]) return;
+ currentIndex=index;
+ const s=songs[index];
+
+ try { video.pause(); } catch(e) {}
+
+ video.src=s.url;
+ video.load();
+
+ nowTitle.textContent=s.name;
+ nowArtist.textContent=s.artist;
+ noVideo.style.display='none';
+ statusEl.textContent='Cargando...';
+ renderSongs();
+
+ if(autoPlay){
+   try {
+     await video.play();
+   } catch(err) {
+     statusEl.textContent='Listo para reproducir';
+     console.warn('El navegador no pudo iniciar automáticamente el video:', err);
+   }
+ }
+}
+
+// Selector de archivos totalmente blindado
+filePicker.onchange = e => {
+ const files = e.target.files;
+ if (!files || files.length === 0) return;
+ 
+ for (let i = 0; i < files.length; i++) {
+   const file = files[i];
+   songs.push({
+     name: cleanName(file.name),
+     artist: 'Archivo local',
+     url: URL.createObjectURL(file),
+     file
+   });
+ }
+ 
+ renderSongs();
+ if (currentIndex < 0 && songs.length > 0) {
+   loadSong(0, false);
+ }
+ filePicker.value = '';
+};
+
+async function togglePlay(){
+ if(!video.src){
+   if(songs.length) await loadSong(currentIndex >= 0 ? currentIndex : 0, false);
+   else return;
+ }
+
+ if(video.paused){
+   try {
+     await video.play();
+   } catch(err) {
+     statusEl.textContent='No se puede reproducir este video';
+     console.error('Error al reproducir:', err);
+     alert('El navegador no puede reproducir este archivo. Prueba con un video MP4.');
+   }
+ } else {
+   video.pause();
+ }
+}
+
+playBtn.onclick=togglePlay;
+video.addEventListener('play',()=>{playBtn.textContent='❚❚';statusEl.textContent='Reproduciendo'});
+video.addEventListener('pause',()=>{playBtn.textContent='▶';statusEl.textContent='Pausado'});
+video.addEventListener('ended',()=>{statusEl.textContent='Finalizado';nextSong()});
+video.addEventListener('loadedmetadata',()=>{
+ totalTime.textContent=formatTime(video.duration);
+ durationEl.textContent=formatTime(video.duration);
+ statusEl.textContent='Listo';
+});
+video.addEventListener('canplay',()=>{
+ if(video.paused) statusEl.textContent='Listo para reproducir';
+});
+video.addEventListener('error',()=>{
+ statusEl.textContent='Error de video';
+ console.error('HTML5 video error:', video.error);
+});
+video.addEventListener('stalled',()=>{
+ statusEl.textContent='Esperando video...';
+});
+video.addEventListener('timeupdate',()=>{
+ currentTime.textContent=formatTime(video.currentTime);
+ progress.value=video.duration?(video.currentTime/video.duration)*100:0;
+});
+
+progress.addEventListener('input',()=>{if(video.duration) video.currentTime=(progress.value/100)*video.duration});
+document.getElementById('rewind').onclick=()=>video.currentTime=Math.max(0,video.currentTime-10);
+document.getElementById('forward').onclick=()=>video.currentTime=Math.min(video.duration||0,video.currentTime+10);
+document.getElementById('prev').onclick=prevSong;
+document.getElementById('next').onclick=nextSong;
+
+function nextSong(){
+ if(!songs.length)return;
+ loadSong((currentIndex+1)%songs.length,true);
+}
+function prevSong(){
+ if(!songs.length)return;
+ loadSong((currentIndex-1+songs.length)%songs.length,true);
+}
+
+function updateVolume(){
+ video.volume=volume.value;
+ video.muted=false;
+ mute.textContent='🔊';
+}
+volume.addEventListener('input',updateVolume);
+
+mute.onclick=()=>{
+ video.muted=!video.muted;
+ mute.textContent=video.muted?'🔇':'🔊';
+};
+
+document.getElementById('speedDown').onclick=()=>{
+ playbackRate=Math.max(.5,Math.round((playbackRate-.05)*100)/100);
+ video.playbackRate=playbackRate;
+ speedLabel.textContent=playbackRate.toFixed(2)+'x';
+};
+document.getElementById('speedUp').onclick=()=>{
+ playbackRate=Math.min(2,Math.round((playbackRate+.05)*100)/100);
+ video.playbackRate=playbackRate;
+ speedLabel.textContent=playbackRate.toFixed(2)+'x';
+};
+
+search.addEventListener('input',renderSongs);
+
+document.getElementById('clearBtn').onclick=()=>{
+ if(!songs.length)return;
+ if(confirm('¿Eliminar todos los videos de la biblioteca?')){
+   songs.forEach(s=>URL.revokeObjectURL(s.url));
+   songs=[];currentIndex=-1;video.removeAttribute('src');video.load();
+   noVideo.style.display='block';nowTitle.textContent='Ninguna canción seleccionada';
+   nowArtist.textContent='Karaoke Player';statusEl.textContent='Detenido';
+   renderSongs();
+ }
+};
+
+async function fullscreen(){
+ const el=document.getElementById('playerArea');
+ if(document.fullscreenElement) await document.exitFullscreen();
+ else await el.requestFullscreen?.();
+}
+document.getElementById('fsBtn').onclick=fullscreen;
+
+document.addEventListener('keydown',e=>{
+ if(e.target.tagName==='INPUT')return;
+ if(e.code==='Space'){e.preventDefault();togglePlay()}
+ else if(e.key==='ArrowRight'){e.preventDefault();nextSong()}
+ else if(e.key==='ArrowLeft'){e.preventDefault();prevSong()}
+ else if(e.key.toLowerCase()==='f') fullscreen();
+});
+
+video.volume=.8;
+renderSongs();
+</script>
+</body>
+</html>
