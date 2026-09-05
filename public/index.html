@@ -3,23 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Station - López Equipment</title>
+    <title>Karaoke Station Pro - DUA & DVB</title>
     <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --border-color: #30363d;
+            --accent-color: #238636;
+            --accent-hover: #2ea043;
+            --text-color: #c9d1d9;
+            --text-bright: #f0f6fc;
+            --blue-glow: #1f6feb;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
         }
 
         header {
@@ -28,85 +39,134 @@
         }
 
         header h1 {
-            color: #38bdf8;
-            font-size: 2rem;
+            color: var(--text-bright);
+            font-size: 2.2rem;
             margin-bottom: 5px;
         }
 
         header p {
-            color: #94a3b8;
+            color: #8b949e;
             font-size: 1rem;
         }
 
-        .main-container {
+        .main-layout {
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 900px;
+            max-width: 1200px;
             gap: 20px;
         }
 
-        /* Contenedor del video principal */
-        .video-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        /* Contenedor de las Dos Pantallas (DUA y DVB) */
+        .screens-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
-        .video-container {
+        @media (max-width: 768px) {
+            .screens-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .screen-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            color: var(--text-bright);
+        }
+
+        .video-box {
             position: relative;
             width: 100%;
-            padding-bottom: 56.25%; /* Relación de aspecto 16:9 */
-            height: 0;
+            padding-bottom: 56.25%; /* 16:9 */
             background: #000;
             border-radius: 8px;
             overflow: hidden;
         }
 
-        .video-container video {
+        .video-box video, .video-box iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: contain;
+            border: none;
         }
 
-        /* Controles y Panel de Estado */
-        .control-panel {
-            background: #1e293b;
+        /* Panel de Control y Búsqueda */
+        .control-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            gap: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
 
-        .panel-row {
+        .search-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-box {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 10px;
+            background: #21262d;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
 
-        input[type="text"] {
+        .search-box h3 {
+            font-size: 1.1rem;
+            color: var(--text-bright);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"], input[type="file"] {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
-            border: 1px solid #475569;
-            background: #0f172a;
-            color: #fff;
-            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-bright);
+            font-size: 0.95rem;
         }
 
         button {
-            padding: 12px 20px;
+            padding: 10px 18px;
             border: none;
             border-radius: 6px;
-            background-color: #0284c7;
+            background-color: var(--accent-color);
             color: white;
             font-weight: bold;
             cursor: pointer;
@@ -114,79 +174,195 @@
         }
 
         button:hover {
-            background-color: #0369a1;
+            background-color: var(--accent-hover);
         }
 
-        .qr-section {
-            text-align: center;
-            background: #1e293b;
+        .btn-blue {
+            background-color: var(--blue-glow);
+        }
+        .btn-blue:hover {
+            background-color: #388bfd;
+        }
+
+        /* Panel de Audio y Crossfader */
+        .mixer-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            background: #21262d;
             padding: 15px;
-            border-radius: 12px;
-            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            gap: 20px;
         }
 
-        .qr-section p {
-            color: #cbd5e1;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
+        .mixer-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mixer-control label {
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+
+        input[type="range"] {
+            cursor: pointer;
+            accent-color: var(--accent-color);
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Karaoke Station</h1>
-        <p>Conéctate y controla tu música y videos al instante</p>
+        <h1>Karaoke Station Pro</h1>
+        <p>Sistema de Doble Pantalla (DUA / DVB), Búsqueda de Karaoke y Mezcla</p>
     </header>
 
-    <div class="main-container">
-        <!-- Visualizador de Video -->
-        <div class="video-card">
-            <div class="video-container">
-                <video id="karaokeVideo" controls playsinline>
-                    <!-- Cambia esta ruta por tu archivo de video o enlace -->
-                    <source src="" type="video/mp4">
-                    Tu navegador no soporta la reproducción de video.
-                </video>
+    <div class="main-layout">
+
+        <!-- BLOQUE 1: Las Dos Pantallas (DUA y DVB) -->
+        <div class="screens-container">
+            <!-- Pantalla DUA -->
+            <div class="screen-card">
+                <div class="screen-header">
+                    <span>Pantalla Principal (DUA)</span>
+                    <span id="statusDUA" style="font-size: 0.8rem; color: var(--accent-color);">Listo</span>
+                </div>
+                <div class="video-box">
+                    <video id="videoDUA" controls playsinline>
+                        <source src="" type="video/mp4">
+                        Tu navegador no soporta video.
+                    </video>
+                </div>
+            </div>
+
+            <!-- Pantalla DVB -->
+            <div class="screen-card">
+                <div class="screen-header">
+                    <span>Pantalla Secundaria (DVB)</span>
+                    <span id="statusDVB" style="font-size: 0.8rem; color: var(--blue-glow);">Listo</span>
+                </div>
+                <div class="video-box">
+                    <video id="videoDVB" controls playsinline>
+                        <source src="" type="video/mp4">
+                        Tu navegador no soporta video.
+                    </video>
+                </div>
             </div>
         </div>
 
-        <!-- Panel de Control Principal -->
-        <div class="control-panel">
-            <div class="panel-row">
-                <input type="text" id="videoUrlInput" placeholder="Pega el enlace del video o ruta local (.mp4)...">
-                <button onclick="cargarVideo()">Cargar Video</button>
+        <!-- BLOQUE 2: Paneles de Búsqueda Separados -->
+        <div class="control-section">
+            <div class="search-grid">
+                
+                <!-- Búsqueda por Internet (YouTube / Web) -->
+                <div class="search-box">
+                    <h3>🔍 Búsqueda por Internet (Karaoke)</h3>
+                    <div class="input-group">
+                        <input type="text" id="internetSearchInput" placeholder="Ej: Luis Fonsi Karaoke...">
+                        <button class="btn-blue" onclick="buscarInternet()">Buscar</button>
+                    </div>
+                    <small style="color: #8b949e;">Busca enlaces de video directos o listas web.</small>
+                </div>
+
+                <!-- Búsqueda en Carpeta (Archivos Locales) -->
+                <div class="search-box">
+                    <h3>📂 Buscar en Carpeta (Local)</h3>
+                    <div class="input-group">
+                        <input type="file" id="localFolderInput" accept="video/*" multiple onchange="cargarDesdeCarpeta(event)">
+                    </div>
+                    <small style="color: #8b949e;">Selecciona uno o varios videos de tu equipo.</small>
+                </div>
+
             </div>
-            <div class="panel-row">
-                <span id="connectionStatus" style="color: #38bdf8; font-size: 0.9rem;">Estado P2P: Listo para conectar</span>
+
+            <!-- BLOQUE 3: Mezclador, Volumen y Crossfader -->
+            <div class="mixer-panel">
+                <div class="mixer-control">
+                    <label>Volumen DUA</label>
+                    <input type="range" id="volDUA" min="0" max="1" step="0.05" value="1" oninput="cambiarVolumen('DUA', this.value)">
+                </div>
+
+                <div class="mixer-control" style="flex: 1; max-width: 300px;">
+                    <label>Crossfader (DUA ⇄ DVB)</label>
+                    <input type="range" id="crossfader" min="0" max="1" step="0.05" value="0.5" oninput="aplicarCrossfader(this.value)">
+                </div>
+
+                <div class="mixer-control">
+                    <label>Volumen DVB</label>
+                    <input type="range" id="volDVB" min="0" max="1" step="0.05" value="1" oninput="cambiarVolumen('DVB', this.value)">
+                </div>
             </div>
+
         </div>
 
-        <!-- Sección de Control Remoto (QR / PeerJS) -->
-        <div class="qr-section">
-            <p>Escanea para controlar desde tu teléfono (Remoto)</p>
-            <div id="qrcode" style="display:inline-block; background: #fff; padding: 10px; border-radius: 6px;">
-                <!-- Espacio para tu QR dinámico -->
-                <span style="color: #000; font-size: 0.8rem;">[Código QR de Conexión]</span>
-            </div>
-        </div>
     </div>
 
     <script>
-        // Función básica para cargar el video dinámicamente desde el input
-        function cargarVideo() {
-            const inputVal = document.getElementById('videoUrlInput').value;
-            const videoElement = document.getElementById('karaokeVideo');
-            
-            if(inputVal.trim() !== "") {
-                videoElement.src = inputVal;
-                videoElement.load();
-                videoElement.play().catch(error => {
-                    console.log("Reproducción automática bloqueada o ruta inválida:", error);
-                });
-            } else {
-                alert("Por favor ingresa una ruta o enlace de video válido.");
+        // Referencias a los elementos multimedia
+        const vDUA = document.getElementById('videoDUA');
+        const vDVB = document.getElementById('videoDVB');
+
+        // Función para cargar archivos locales desde la carpeta seleccionada
+        function cargarDesdeCarpeta(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                // Cargamos el primer archivo seleccionado en la pantalla DUA por defecto
+                const fileURL = URL.createObjectURL(files[0]);
+                vDUA.src = fileURL;
+                vDUA.load();
+                document.getElementById('statusDUA').innerText = files[0].name;
+                
+                // Si hay un segundo archivo, lo mandamos a DVB de una vez
+                if (files.length > 1) {
+                    const fileURL2 = URL.createObjectURL(files[1]);
+                    vDVB.src = fileURL2;
+                    vDVB.load();
+                    document.getElementById('statusDVB').innerText = files[1].name;
+                }
             }
+        }
+
+        // Función simulada/adaptada para búsqueda en internet
+        function buscarInternet() {
+            const query = document.getElementById('internetSearchInput').value.trim();
+            if (query !== "") {
+                // Puedes conectar aquí tu enlace directo o redirección de búsqueda
+                alert("Buscando en internet karaoke para: " + query + "\n(Ingresa un enlace directo MP4 o integra la API de tu preferencia).");
+            } else {
+                alert("Escribe algo para buscar.");
+            }
+        }
+
+        // Control de Volumen Independiente
+        function cambiarVolumen(pantalla, valor) {
+            if (pantalla === 'DUA') {
+                vDUA.volume = valor;
+            } else if (pantalla === 'DVB') {
+                vDVB.volume = valor;
+            }
+        }
+
+        // Control de Crossfader entre DUA y DVB
+        function aplicarCrossfader(valor) {
+            // valor va de 0 (todo DUA) a 1 (todo DVB)
+            // Si crossfader es 0: DUA vol = 1, DVB vol = 0
+            // Si crossfader es 0.5: ambos a 1
+            // Si crossfader es 1: DUA vol = 0, DVB vol = 1
+            
+            let volA = 1 - valor;
+            let volB = Number(valor);
+
+            vDUA.volume = volA;
+            vDVB.volume = volB;
+
+            // Sincronizar visualmente con los sliders de volumen
+            document.getElementById('volDUA').value = volA;
+            document.getElementById('volDVB').value = volB;
         }
     </script>
 
