@@ -79,7 +79,7 @@ cat << 'EOF' > public/index.html
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-around: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -471,19 +471,45 @@ cat << 'EOF' > public/index.html
       const list = document.getElementById('resultsList');
       list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas de Karaoke...</div>';
 
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-        
-        currentSongsList = await res.json();
-        renderResultsList();
-      } catch (e) {
-        console.error("Error en la búsqueda:", e);
-        list.innerHTML = `
-          <div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">
-            ⚠️ No se pudo conectar con el servidor de búsqueda (<code>/api/search</code>).<br>
-            <span style="color:var(--text-sub); font-size:11px">Verifica que tu backend Node.js esté corriendo y configurado para consultar YouTube API.</span>
-          </div>`;
+      const searchTerms = encodeURIComponent(q + ' karaoke');
+      const apis = [
+        `https://pipedapi.kavin.rocks/search?q=${searchTerms}&filter=all`,
+        `https://vid.puffyan.us/api/v1/search?q=${searchTerms}`
+      ];
+
+      let success = false;
+
+      for (const apiUrl of apis) {
+        try {
+          const res = await fetch(apiUrl);
+          if (!res.ok) continue;
+          const data = await res.json();
+          
+          let results = Array.isArray(data) ? data : (data.items || []);
+
+          if (results.length > 0) {
+            currentSongsList = results.slice(0, 15).map(item => {
+              const id = item.videoId || (item.url ? (item.url.split('v=')[1] || '').split('&')[0] : '');
+              return {
+                videoId: id,
+                title: item.title || 'Pista de Karaoke',
+                duration: item.duration ? (typeof item.duration === 'number' ? formatTime(item.duration) : item.duration) : ''
+              };
+            }).filter(item => item.videoId);
+
+            if (currentSongsList.length > 0) {
+              renderResultsList();
+              success = true;
+              break;
+            }
+          }
+        } catch (e) {
+          console.log('Intentando siguiente servidor de búsqueda...');
+        }
+      }
+
+      if (!success) {
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ No se pudieron obtener resultados. Revisa tu conexión a internet e intenta nuevamente.</div>';
       }
     }
 
