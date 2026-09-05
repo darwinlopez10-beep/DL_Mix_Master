@@ -78,7 +78,7 @@
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-around: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -271,8 +271,7 @@
   </div>
 
   <script>
-    // Si posees una API Key oficial de Google, colócala aquí.
-    // De lo contrario, la aplicación usará automáticamente la API pública de respaldo.
+    // Coloca tu API Key de Google Cloud si dispones de una.
     const YOUTUBE_API_KEY = 'TU_CLAVE_API_AQUI';
 
     let playerA = null, playerB = null;
@@ -477,7 +476,7 @@
 
       const query = encodeURIComponent(q + ' karaoke');
 
-      // 1. Intento con Google YouTube Data API v3 si la clave está configurada
+      // 1. Google YouTube Data API v3 (Si la clave es válida)
       if (YOUTUBE_API_KEY && YOUTUBE_API_KEY !== 'TU_CLAVE_API_AQUI') {
         try {
           const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${query}&type=video&key=${YOUTUBE_API_KEY}`;
@@ -494,33 +493,45 @@
               return;
             }
           }
-        } catch (error) {
-          console.warn('API oficial con detalles, utilizando servidor alternativo...', error);
+        } catch (e) {
+          console.warn('API de Google no disponible, probando réplicas públicas...');
         }
       }
 
-      // 2. Respaldo automático sin necesidad de API Key
-      try {
-        const fallbackUrl = `https://pipedapi.kavin.rocks/search?q=${query}&filter=videos`;
-        const res = await fetch(fallbackUrl);
-        if (res.ok) {
-          const data = await res.json();
-          const items = data.items || data;
-          if (items && items.length > 0) {
-            currentSongsList = items.filter(item => item.url || item.id).slice(0, 15).map(item => ({
-              videoId: item.url ? item.url.replace('/watch?v=', '') : item.id,
-              title: item.title,
-              duration: ''
-            }));
-            renderResultsList();
-            return;
+      // 2. Rotación por servidores públicos de Invidious
+      const fallbackMirrors = [
+        `https://vid.puffyan.us/api/v1/search?q=${query}&type=video`,
+        `https://invidious.nerdvpn.de/api/v1/search?q=${query}&type=video`,
+        `https://inv.tux.pizza/api/v1/search?q=${query}&type=video`,
+        `https://yewtu.be/api/v1/search?q=${query}&type=video`
+      ];
+
+      for (const endpoint of fallbackMirrors) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s tiempo límite por servidor
+
+          const res = await fetch(endpoint, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              currentSongsList = data.slice(0, 15).map(item => ({
+                videoId: item.videoId,
+                title: item.title,
+                duration: ''
+              }));
+              renderResultsList();
+              return;
+            }
           }
+        } catch (err) {
+          console.warn(`Falló ${endpoint}, probando el siguiente servidor...`);
         }
-      } catch (fallbackError) {
-        console.error('Error en servicio de respaldo:', fallbackError);
       }
 
-      list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ No se pudieron obtener resultados en este momento. Intenta nuevamente.</div>';
+      list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ Servidores públicos no disponibles. Te recomendamos colocar tu YOUTUBE_API_KEY de Google Cloud en el código.</div>';
     }
 
     function renderResultsList() {
