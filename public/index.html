@@ -79,7 +79,7 @@ cat << 'EOF' > public/index.html
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-around: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -273,38 +273,22 @@ cat << 'EOF' > public/index.html
 
   <script>
     let playerA = null, playerB = null;
-    let manualPlayA = false, manualPlayB = false;
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
 
-    // Inicialización estable
+    // Inicialización preventiva para congelar el Autoplay
     function onYouTubeIframeAPIReady() {
       playerA = new YT.Player('player-a', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 },
-        events: {
-          'onStateChange': (e) => handleStateChange('A', e)
-        }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 }
       });
-
       playerB = new YT.Player('player-b', {
         height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 },
-        events: {
-          'onStateChange': (e) => handleStateChange('B', e)
-        }
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 }
       });
 
       setInterval(updateTimers, 500);
-    }
-
-    // Intercepta el arranque automático no deseado y lo fuerza a pausa
-    function handleStateChange(deck, event) {
-      const isManual = (deck === 'A') ? manualPlayA : manualPlayB;
-      if (event.data === YT.PlayerState.PLAYING && !isManual) {
-        event.target.pauseVideo();
-      }
     }
 
     function formatTime(sec) {
@@ -345,20 +329,23 @@ cat << 'EOF' > public/index.html
       }
     }
 
-    // CARGA DE CANCIÓN GARANTIZADA
+    // CARGA MANUAL Y PAUSA OBLIGATORIA
     function loadVideoDirect(deck, videoId, title) {
       const targetPlayer = (deck === 'A') ? playerA : playerB;
       const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
 
-      if (deck === 'A') manualPlayA = false;
-      if (deck === 'B') manualPlayB = false;
-
       if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
+        // Forzamos cueVideoById y pausamos explícitamente para cancelar cualquier disparador
         targetPlayer.cueVideoById(videoId);
+        setTimeout(() => {
+          if (typeof targetPlayer.pauseVideo === 'function') {
+            targetPlayer.pauseVideo();
+          }
+        }, 150);
+
         document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
         if (btn) btn.innerText = 'PLAY ▶';
       }
-
       saveToHistory(title, videoId);
     }
 
@@ -370,19 +357,13 @@ cat << 'EOF' > public/index.html
       if (action === 'toggle') {
         const state = p.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
-          if (deck === 'A') manualPlayA = false;
-          if (deck === 'B') manualPlayB = false;
           p.pauseVideo();
           btn.innerText = 'PLAY ▶';
         } else {
-          if (deck === 'A') manualPlayA = true;
-          if (deck === 'B') manualPlayB = true;
           p.playVideo();
           btn.innerText = 'PAUSE ❚❚';
         }
       } else if (action === 'cue') {
-        if (deck === 'A') manualPlayA = false;
-        if (deck === 'B') manualPlayB = false;
         p.pauseVideo();
         p.seekTo(0, true);
         btn.innerText = 'PLAY ▶';
