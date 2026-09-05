@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Station Pro - DUA & DVB</title>
+    <title>Karaoke Station Pro - DUA & DVB P2P</title>
+    <!-- Librería PeerJS para el control remoto mediante QR -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <!-- Librería QRCode.js para generar el código QR en pantalla -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
         :root {
             --bg-color: #0d1117;
@@ -152,7 +157,7 @@
             gap: 8px;
         }
 
-        input[type="text"], input[type="file"] {
+        input[type="text"] {
             flex: 1;
             padding: 10px;
             border-radius: 6px;
@@ -160,6 +165,26 @@
             background: var(--bg-color);
             color: var(--text-bright);
             font-size: 0.95rem;
+        }
+
+        /* Estilo personalizado para el botón de archivos locales */
+        .file-upload-btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background-color: var(--blue-glow);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            transition: background 0.2s;
+            flex: 1;
+        }
+        .file-upload-btn:hover {
+            background-color: #388bfd;
+        }
+        input[type="file"] {
+            display: none;
         }
 
         button {
@@ -213,13 +238,33 @@
             cursor: pointer;
             accent-color: var(--accent-color);
         }
+
+        /* Sección QR Remote */
+        .qr-section {
+            background: #21262d;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #qrcode {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Karaoke Station Pro</h1>
-        <p>Sistema de Doble Pantalla (DUA / DVB), Búsqueda de Karaoke y Mezcla</p>
+        <p>Control Remoto P2P (QR) & Búsqueda Dual</p>
     </header>
 
     <div class="main-layout">
@@ -232,7 +277,7 @@
                     <span>Pantalla Principal (DUA)</span>
                     <span id="statusDUA" style="font-size: 0.8rem; color: var(--accent-color);">Listo</span>
                 </div>
-                <div class="video-box">
+                <div class="video-box" id="boxDUA">
                     <video id="videoDUA" controls playsinline>
                         <source src="" type="video/mp4">
                         Tu navegador no soporta video.
@@ -246,7 +291,7 @@
                     <span>Pantalla Secundaria (DVB)</span>
                     <span id="statusDVB" style="font-size: 0.8rem; color: var(--blue-glow);">Listo</span>
                 </div>
-                <div class="video-box">
+                <div class="video-box" id="boxDVB">
                     <video id="videoDVB" controls playsinline>
                         <source src="" type="video/mp4">
                         Tu navegador no soporta video.
@@ -259,23 +304,24 @@
         <div class="control-section">
             <div class="search-grid">
                 
-                <!-- Búsqueda por Internet (YouTube / Web) -->
+                <!-- Búsqueda por Internet (YouTube) -->
                 <div class="search-box">
-                    <h3>🔍 Búsqueda por Internet (Karaoke)</h3>
+                    <h3>🔍 Buscar en YouTube (Karaoke)</h3>
                     <div class="input-group">
-                        <input type="text" id="internetSearchInput" placeholder="Ej: Luis Fonsi Karaoke...">
-                        <button class="btn-blue" onclick="buscarInternet()">Buscar</button>
+                        <input type="text" id="youtubeSearchInput" placeholder="Ej: Salsa karaoke instrumental...">
+                        <button class="btn-blue" onclick="buscarYouTube()">Cargar en DUA</button>
                     </div>
-                    <small style="color: #8b949e;">Busca enlaces de video directos o listas web.</small>
+                    <small style="color: #8b949e;">Se reproducirá automáticamente en la pantalla DUA.</small>
                 </div>
 
-                <!-- Búsqueda en Carpeta (Archivos Locales) -->
+                <!-- Búsqueda en Carpeta (Archivos Locales de la Computadora) -->
                 <div class="search-box">
-                    <h3>📂 Buscar en Carpeta (Local)</h3>
+                    <h3>📂 Buscar en Carpeta (Computadora)</h3>
                     <div class="input-group">
+                        <label for="localFolderInput" class="file-upload-btn">Seleccionar Archivos</label>
                         <input type="file" id="localFolderInput" accept="video/*" multiple onchange="cargarDesdeCarpeta(event)">
                     </div>
-                    <small style="color: #8b949e;">Selecciona uno o varios videos de tu equipo.</small>
+                    <small id="folderStatus" style="color: #8b949e;">Ningún archivo seleccionado.</small>
                 </div>
 
             </div>
@@ -298,72 +344,115 @@
                 </div>
             </div>
 
+            <!-- BLOQUE 4: Código QR para Control Remoto en Tablet -->
+            <div class="qr-section">
+                <h3>📱 Conexión Remota (Tablet / Móvil)</h3>
+                <p id="peerStatus" style="color: #38bdf8; font-size: 0.9rem;">Inicializando conexión P2P...</p>
+                <div id="qrcode"></div>
+                <small style="color: #8b949e;">Escanea este código con tu tablet para abrir el panel de control remoto.</small>
+            </div>
+
         </div>
 
     </div>
 
     <script>
-        // Referencias a los elementos multimedia
         const vDUA = document.getElementById('videoDUA');
         const vDVB = document.getElementById('videoDVB');
+        const boxDUA = document.getElementById('boxDUA');
 
-        // Función para cargar archivos locales desde la carpeta seleccionada
+        // --- 1. BÚSQUEDA LOCAL DE ARCHIVOS DE COMPUTADORA ---
         function cargarDesdeCarpeta(event) {
             const files = event.target.files;
             if (files.length > 0) {
-                // Cargamos el primer archivo seleccionado en la pantalla DUA por defecto
+                // Carga el primer archivo en DUA como video nativo
                 const fileURL = URL.createObjectURL(files[0]);
-                vDUA.src = fileURL;
-                vDUA.load();
-                document.getElementById('statusDUA').innerText = files[0].name;
                 
-                // Si hay un segundo archivo, lo mandamos a DVB de una vez
+                // Aseguramos que el contenedor DUA tenga un elemento <video> activo
+                boxDUA.innerHTML = `<video id="videoDUA" controls playsinline autoplay><source src="${fileURL}" type="video/mp4">Tu navegador no soporta video.</video>`;
+                
+                document.getElementById('statusDUA').innerText = files[0].name;
+                document.getElementById('folderStatus').innerText = `${files.length} archivo(s) cargado(s) exitosamente.`;
+                
+                // Si hay un segundo archivo, lo cargamos en DVB también
                 if (files.length > 1) {
                     const fileURL2 = URL.createObjectURL(files[1]);
-                    vDVB.src = fileURL2;
-                    vDVB.load();
+                    document.getElementById('boxDVB').innerHTML = `<video id="videoDVB" controls playsinline><source src="${fileURL2}" type="video/mp4">Tu navegador no soporta video.</video>`;
                     document.getElementById('statusDVB').innerText = files[1].name;
                 }
             }
         }
 
-        // Función simulada/adaptada para búsqueda en internet
-        function buscarInternet() {
-            const query = document.getElementById('internetSearchInput').value.trim();
-            if (query !== "") {
-                // Puedes conectar aquí tu enlace directo o redirección de búsqueda
-                alert("Buscando en internet karaoke para: " + query + "\n(Ingresa un enlace directo MP4 o integra la API de tu preferencia).");
-            } else {
-                alert("Escribe algo para buscar.");
+        // --- 2. BÚSQUEDA Y REPRODUCCIÓN DESDE YOUTUBE ---
+        function buscarYouTube() {
+            let query = document.getElementById('youtubeSearchInput').value.trim();
+            if (query === "") {
+                alert("Escribe algo para buscar en YouTube.");
+                return;
             }
-        }
 
-        // Control de Volumen Independiente
-        function cambiarVolumen(pantalla, valor) {
-            if (pantalla === 'DUA') {
-                vDUA.volume = valor;
-            } else if (pantalla === 'DVB') {
-                vDVB.volume = valor;
-            }
-        }
-
-        // Control de Crossfader entre DUA y DVB
-        function aplicarCrossfader(valor) {
-            // valor va de 0 (todo DUA) a 1 (todo DVB)
-            // Si crossfader es 0: DUA vol = 1, DVB vol = 0
-            // Si crossfader es 0.5: ambos a 1
-            // Si crossfader es 1: DUA vol = 0, DVB vol = 1
+            // Convertimos la consulta en un formato compatible para incrustar resultados o términos de búsqueda segura
+            // Usamos la búsqueda integrada de YouTube en modo embed o un iframe de búsqueda directa
+            let encodedQuery = encodeURIComponent(query + " karaoke");
             
+            // Reemplazamos el contenedor DUA con un IFrame incrustado directamente apuntando al reproductor/búsqueda de YouTube
+            boxDUA.innerHTML = `
+                <iframe src="https://www.youtube.com/embed?listType=search&list=${encodedQuery}&autoplay=1" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            `;
+            document.getElementById('statusDUA').innerText = "YouTube: " + query;
+        }
+
+        // --- 3. CONTROLES DE AUDIO Y CROSSFADER ---
+        function cambiarVolumen(pantalla, valor) {
+            const currentVideo = pantalla === 'DUA' ? document.getElementById('videoDUA') : document.getElementById('videoDVB');
+            if (currentVideo && currentVideo.tagName === 'VIDEO') {
+                currentVideo.volume = valor;
+            }
+        }
+
+        function aplicarCrossfader(valor) {
             let volA = 1 - valor;
             let volB = Number(valor);
 
-            vDUA.volume = volA;
-            vDVB.volume = volB;
+            const videoA = document.getElementById('videoDUA');
+            const videoB = document.getElementById('videoDVB');
 
-            // Sincronizar visualmente con los sliders de volumen
+            if (videoA && videoA.tagName === 'VIDEO') videoA.volume = volA;
+            if (videoB && videoB.tagName === 'VIDEO') videoB.volume = volB;
+
             document.getElementById('volDUA').value = volA;
             document.getElementById('volDVB').value = volB;
         }
+
+        // --- 4. CONFIGURACIÓN PEERJS Y GENERACIÓN DE CÓDIGO QR ---
+        let peer = new Peer();
+        peer.on('open', (id) => {
+            document.getElementById('peerStatus').innerText = "Conexión P2P lista. ID generado.";
+            
+            // Construimos el enlace actual incluyendo el ID de la sesión para la tablet
+            let currentUrl = window.location.href.split('?')[0] + "?remote=" + id;
+            
+            // Generamos el código QR automáticamente
+            document.getElementById('qrcode').innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: currentUrl,
+                width: 160,
+                height: 160,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        });
+
+        peer.on('connection', (conn) => {
+            conn.on('data', (data) => {
+                // Aquí puedes recibir comandos desde la tablet en el futuro si deseas automatizar acciones remotas
+                console.log("Comando recibido desde la tablet:", data);
+            });
+        });
     </script>
 
 </body>
