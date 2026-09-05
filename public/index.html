@@ -1,556 +1,63 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Karaoke Station Pro - DUA & DVB P2P</title>
-    <!-- Librería PeerJS para el control remoto mediante QR -->
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <!-- Librería QRCode.js para generar el código QR en pantalla -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-    <style>
-        :root {
-            --bg-color: #0d1117;
-            --panel-bg: #161b22;
-            --border-color: #30363d;
-            --accent-color: #238636;
-            --accent-hover: #2ea043;
-            --text-color: #c9d1d9;
-            --text-bright: #f0f6fc;
-            --blue-glow: #1f6feb;
-            --youtube-red: #ff0000;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        header h1 {
-            color: var(--text-bright);
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-        }
-
-        header p {
-            color: #8b949e;
-            font-size: 1rem;
-        }
-
-        .main-layout {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 1200px;
-            gap: 20px;
-        }
-
-        /* Contenedor de las Dos Pantallas (DUA y DVB) */
-        .screens-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .screens-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .screen-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-        }
-
-        .screen-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-            color: var(--text-bright);
-        }
-
-        .video-box {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 */
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .video-box video, .video-box iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            border: none;
-        }
-
-        /* Panel de Control Principal */
-        .control-section {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-        }
-
-        /* Distribución estricta: QR Izquierda (300px), Buscadores Derecha (Flex 1) */
-        .control-grid-layout {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 20px;
-            align-items: stretch;
-        }
-
-        @media (max-width: 900px) {
-            .control-grid-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Sección QR Remote (Izquierda) */
-        .qr-section {
-            background: #21262d;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            height: 100%;
-        }
-
-        #qrcode {
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-
-        /* Sección de Buscadores e Historial (Derecha) */
-        .search-and-history-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .search-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        @media (max-width: 768px) {
-            .search-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .search-box {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #21262d;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .search-box h3 {
-            font-size: 0.95rem;
-            color: var(--text-bright);
-        }
-
-        .input-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
-            color: var(--text-bright);
-            font-size: 0.85rem;
-        }
-
-        .file-upload-btn {
-            display: inline-block;
-            padding: 8px 14px;
-            background-color: var(--blue-glow);
-            color: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            text-align: center;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-            flex: 1;
-        }
-        .file-upload-btn:hover {
-            background-color: #388bfd;
-        }
-        input[type="file"] {
-            display: none;
-        }
-
-        button {
-            padding: 8px 14px;
-            border: none;
-            border-radius: 6px;
-            background-color: var(--accent-color);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .btn-blue {
-            background-color: var(--blue-glow);
-        }
-        .btn-blue:hover {
-            background-color: #388bfd;
-        }
-
-        .btn-youtube {
-            background-color: var(--youtube-red);
-        }
-        .btn-youtube:hover {
-            background-color: #cc0000;
-        }
-
-        /* Historial de canciones */
-        .history-box {
-            background: #21262d;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .history-box h4 {
-            font-size: 0.85rem;
-            color: var(--text-bright);
-            margin-bottom: 6px;
-        }
-
-        #historyList {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        #historyList li {
-            background: var(--bg-color);
-            padding: 5px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            border: 1px solid var(--border-color);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Panel de Audio y Crossfader */
-        .mixer-panel {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            align-items: center;
-            background: #21262d;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            gap: 20px;
-        }
-
-        .mixer-control {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .mixer-control label {
-            font-size: 0.85rem;
-            color: #8b949e;
-        }
-
-        input[type="range"] {
-            cursor: pointer;
-            accent-color: var(--accent-color);
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <h1>Karaoke Station Pro</h1>
-        <p>Control Remoto P2P (QR) & Búsqueda Dual con Historial</p>
-    </header>
-
-    <div class="main-layout">
-
-        <!-- BLOQUE 1: Las Dos Pantallas (DUA y DVB) -->
-        <div class="screens-container">
-            <!-- Pantalla DUA -->
-            <div class="screen-card">
-                <div class="screen-header">
-                    <span>Pantalla Principal (DUA)</span>
-                    <span id="statusDUA" style="font-size: 0.8rem; color: var(--accent-color);">Listo</span>
-                </div>
-                <div class="video-box" id="boxDUA">
-                    <video id="videoDUA" controls playsinline>
-                        <source src="" type="video/mp4">
-                        Tu navegador no soporta video.
-                    </video>
-                </div>
-            </div>
-
-            <!-- Pantalla DVB -->
-            <div class="screen-card">
-                <div class="screen-header">
-                    <span>Pantalla Secundaria (DVB)</span>
-                    <span id="statusDVB" style="font-size: 0.8rem; color: var(--blue-glow);">Listo</span>
-                </div>
-                <div class="video-box" id="boxDVB">
-                    <video id="videoDVB" controls playsinline>
-                        <source src="" type="video/mp4">
-                        Tu navegador no soporta video.
-                    </video>
-                </div>
-            </div>
-        </div>
-
-        <!-- BLOQUE 2: Panel de Control Combinado -->
-        <div class="control-section">
-            
-            <div class="control-grid-layout">
-                
-                <!-- COLUMNA IZQUIERDA: Código QR para Tablet -->
-                <div class="qr-section">
-                    <h3>📱 Control Remoto</h3>
-                    <p id="peerStatus" style="color: #38bdf8; font-size: 0.8rem;">Conectando...</p>
-                    <div id="qrcode"></div>
-                    <small style="color: #8b949e; font-size: 0.75rem;">Escanea con tu tablet para abrir la app a distancia.</small>
-                </div>
-
-                <!-- COLUMNA DERECHA: Buscadores e Historial -->
-                <div class="search-and-history-container">
-                    
-                    <div class="search-grid">
-                        
-                        <!-- Búsqueda en YouTube -->
-                        <div class="search-box">
-                            <h3>🔍 YouTube Karaoke</h3>
-                            <div class="input-group">
-                                <input type="text" id="youtubeInput" placeholder="Pega enlace de YouTube...">
-                                <button class="btn-youtube" onclick="cargarYouTube()">Cargar</button>
-                            </div>
-                            <button class="btn-blue" style="font-size: 0.8rem; padding: 6px;" onclick="abrirBusquedaYouTube()">Abrir Buscador YT</button>
-                        </div>
-
-                        <!-- Búsqueda en Carpeta (Computadora) -->
-                        <div class="search-box">
-                            <h3>📂 Carpeta Local</h3>
-                            <div class="input-group">
-                                <label for="localFolderInput" class="file-upload-btn">Elegir Archivos</label>
-                                <input type="file" id="localFolderInput" accept="video/*" multiple onchange="cargarDesdeCarpeta(event)">
-                            </div>
-                            <small id="folderStatus" style="color: #8b949e; font-size: 0.8rem;">Ningún archivo seleccionado.</small>
-                        </div>
-
-                    </div>
-
-                    <!-- Historial de Reproducción -->
-                    <div class="history-box">
-                        <h4>📜 Historial de Canciones</h4>
-                        <ul id="historyList">
-                            <li style="color: #8b949e; text-align: center;">El historial está vacío.</li>
-                        </ul>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- BLOQUE 3: Mezclador, Volumen y Crossfader -->
-            <div class="mixer-panel">
-                <div class="mixer-control">
-                    <label>Volumen DUA</label>
-                    <input type="range" id="volDUA" min="0" max="1" step="0.05" value="1" oninput="cambiarVolumen('DUA', this.value)">
-                </div>
-
-                <div class="mixer-control" style="flex: 1; max-width: 300px;">
-                    <label>Crossfader (DUA ⇄ DVB)</label>
-                    <input type="range" id="crossfader" min="0" max="1" step="0.05" value="0.5" oninput="aplicarCrossfader(this.value)">
-                </div>
-
-                <div class="mixer-control">
-                    <label>Volumen DVB</label>
-                    <input type="range" id="volDVB" min="0" max="1" step="0.05" value="1" oninput="cambiarVolumen('DVB', this.value)">
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-    <script>
-        const boxDUA = document.getElementById('boxDUA');
-        const historyList = document.getElementById('historyList');
-        let historialItems = [];
-
-        function agregarAlHistorial(nombre) {
-            historialItems.unshift(nombre);
-            if (historialItems.length > 10) historialItems.pop();
-            
-            historyList.innerHTML = "";
-            historialItems.forEach(item => {
-                let li = document.createElement('li');
-                li.innerText = item;
-                historyList.appendChild(li);
-            });
-        }
-
-        // --- 1. CARPETA LOCAL ---
-        function cargarDesdeCarpeta(event) {
-            const files = event.target.files;
-            if (files.length > 0) {
-                const fileURL = URL.createObjectURL(files[0]);
-                boxDUA.innerHTML = `<video id="videoDUA" controls playsinline autoplay><source src="${fileURL}" type="video/mp4">Tu navegador no soporta video.</video>`;
-                
-                document.getElementById('statusDUA').innerText = files[0].name;
-                document.getElementById('folderStatus').innerText = `${files.length} archivo(s) listo(s).`;
-                
-                agregarAlHistorial("📁 Local: " + files[0].name);
-
-                if (files.length > 1) {
-                    const fileURL2 = URL.createObjectURL(files[1]);
-                    document.getElementById('boxDVB').innerHTML = `<video id="videoDVB" controls playsinline><source src="${fileURL2}" type="video/mp4">Tu navegador no soporta video.</video>`;
-                    document.getElementById('statusDVB').innerText = files[1].name;
-                }
-            }
-        }
-
-        // --- 2. YOUTUBE ---
-        function abrirBusquedaYouTube() {
-            window.open("https://www.youtube.com/results?search_query=karaoke", "_blank");
-        }
-
-        function cargarYouTube() {
-            let urlInput = document.getElementById('youtubeInput').value.trim();
-            if (urlInput === "") {
-                alert("Pega un enlace de YouTube válido.");
-                return;
-            }
-
-            let videoId = "";
-            if (urlInput.includes("youtu.be/")) {
-                videoId = urlInput.split("youtu.be/")[1].split("?")[0];
-            } else if (urlInput.includes("watch?v=")) {
-                videoId = urlInput.split("watch?v=")[1].split("&")[0];
-            } else if (urlInput.includes("embed/")) {
-                videoId = urlInput.split("embed/")[1].split("?")[0];
-            }
-
-            if (videoId) {
-                boxDUA.innerHTML = `
-                    <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                    </iframe>
-                `;
-                document.getElementById('statusDUA').innerText = "YouTube ID: " + videoId;
-                agregarAlHistorial("▶️ YouTube (ID: " + videoId + ")");
-            } else {
-                alert("El enlace no es un formato de YouTube reconocido.");
-            }
-        }
-
-        // --- 3. CONTROLES DE AUDIO Y CROSSFADER ---
-        function cambiarVolumen(pantalla, valor) {
-            const currentVideo = pantalla === 'DUA' ? document.getElementById('videoDUA') : document.getElementById('videoDVB');
-            if (currentVideo && currentVideo.tagName === 'VIDEO') {
-                currentVideo.volume = valor;
-            }
-        }
-
-        function aplicarCrossfader(valor) {
-            let volA = 1 - valor;
-            let volB = Number(valor);
-
-            const videoA = document.getElementById('videoDUA');
-            const videoB = document.getElementById('videoDVB');
-
-            if (videoA && videoA.tagName === 'VIDEO') videoA.volume = volA;
-            if (videoB && videoB.tagName === 'VIDEO') videoB.volume = volB;
-
-            document.getElementById('volDUA').value = volA;
-            document.getElementById('volDVB').value = volB;
-        }
-
-        // --- 4. PEERJS Y QR ---
-        let peer = new Peer();
-        peer.on('open', (id) => {
-            document.getElementById('peerStatus').innerText = "Listo en red local.";
-            let currentUrl = window.location.href.split('?')[0] + "?remote=" + id;
-            
-            document.getElementById('qrcode').innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), {
-                text: currentUrl,
-                width: 130,
-                height: 130,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        });
-    </script>
-
-</body>
-</html>
+let playerA = null;
+let playerB = null;
+
+function onYouTubeIframeAPIReady() {
+  console.log("API Lista");
+}
+
+// 1. CUANDO PRESIONAS + DECK A / + DECK B
+function stageSong(deck, videoId, title) {
+  const isA = (deck === 'A');
+  const elementId = isA ? 'player-deck-a' : 'player-deck-b';
+
+  // Destruimos el reproductor anterior para limpiar todo
+  if (isA && playerA && typeof playerA.destroy === 'function') {
+    playerA.destroy();
+    playerA = null;
+  } else if (!isA && playerB && typeof playerB.destroy === 'function') {
+    playerB.destroy();
+    playerB = null;
+  }
+
+  // Creamos el reproductor MUTEADO por defecto
+  const newPlayer = new YT.Player(elementId, {
+    height: '200',
+    width: '100%',
+    videoId: videoId,
+    playerVars: {
+      'autoplay': 1,  // Dejamos que cargue
+      'controls': 1
+    },
+    events: {
+      'onReady': function(event) {
+        // FRENO TOTAL DE AUDIO: Lo muteamos y lo pausamos de inmediato
+        event.target.mute();
+        event.target.pauseVideo();
+        event.target.seekTo(0);
+      }
+    }
+  });
+
+  if (isA) playerA = newPlayer;
+  else playerB = newPlayer;
+
+  document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
+}
+
+// 2. CUANDO PRESIONAS PLAY ▶
+function pressPlay(deck) {
+  const player = (deck === 'A') ? playerA : playerB;
+  if (player && typeof player.playVideo === 'function') {
+    // DESMUTEAMOS Y REPRODUCIMOS
+    player.unMute();
+    player.playVideo();
+  }
+}
+
+// 3. CUANDO PRESIONAS PAUSE ❚❚
+function pressPause(deck) {
+  const player = (deck === 'A') ? playerA : playerB;
+  if (player && typeof player.pauseVideo === 'function') {
+    player.pauseVideo();
+  }
+}
