@@ -1,63 +1,201 @@
-let playerA = null;
-let playerB = null;
-
-function onYouTubeIframeAPIReady() {
-  console.log("API Lista");
-}
-
-// 1. CUANDO PRESIONAS + DECK A / + DECK B
-function stageSong(deck, videoId, title) {
-  const isA = (deck === 'A');
-  const elementId = isA ? 'player-deck-a' : 'player-deck-b';
-
-  // Destruimos el reproductor anterior para limpiar todo
-  if (isA && playerA && typeof playerA.destroy === 'function') {
-    playerA.destroy();
-    playerA = null;
-  } else if (!isA && playerB && typeof playerB.destroy === 'function') {
-    playerB.destroy();
-    playerB = null;
-  }
-
-  // Creamos el reproductor MUTEADO por defecto
-  const newPlayer = new YT.Player(elementId, {
-    height: '200',
-    width: '100%',
-    videoId: videoId,
-    playerVars: {
-      'autoplay': 1,  // Dejamos que cargue
-      'controls': 1
-    },
-    events: {
-      'onReady': function(event) {
-        // FRENO TOTAL DE AUDIO: Lo muteamos y lo pausamos de inmediato
-        event.target.mute();
-        event.target.pauseVideo();
-        event.target.seekTo(0);
-      }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DL Mix-Master Pro - Consola Estilo Prestige</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f17;
+      --panel-bg: #131822;
+      --card-bg: #1a2230;
+      --accent-red: #ff3b30;
+      --accent-cyan: #00d2ff;
+      --accent-orange: #ff9500;
+      --text-main: #ffffff;
+      --text-muted: #8e9aaf;
+      --border-line: #222d42;
     }
-  });
 
-  if (isA) playerA = newPlayer;
-  else playerB = newPlayer;
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+    body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-  document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
-}
+    /* Barra Superior */
+    header { background: #070a0f; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-line); font-size: 12px; }
+    .top-menu { display: flex; gap: 15px; align-items: center; color: var(--text-muted); font-weight: 600; }
+    .top-menu span { cursor: pointer; display: flex; gap: 5px; align-items: center; }
+    .top-menu span:hover { color: var(--accent-orange); }
 
-// 2. CUANDO PRESIONAS PLAY ▶
-function pressPlay(deck) {
-  const player = (deck === 'A') ? playerA : playerB;
-  if (player && typeof player.playVideo === 'function') {
-    // DESMUTEAMOS Y REPRODUCIMOS
-    player.unMute();
-    player.playVideo();
-  }
-}
+    /* Contenedor Principal de la Consola */
+    .console-layout { display: grid; grid-template-columns: 1fr 280px 1fr; gap: 10px; padding: 10px; flex: 1; overflow-y: auto; }
 
-// 3. CUANDO PRESIONAS PAUSE ❚❚
-function pressPause(deck) {
-  const player = (deck === 'A') ? playerA : playerB;
-  if (player && typeof player.pauseVideo === 'function') {
-    player.pauseVideo();
-  }
-}
+    /* Paneles de los Decks A y B */
+    .deck-box { background: var(--panel-bg); border: 1px solid var(--border-line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .deck-header { display: flex; justify-content: space-between; align-items: center; background: #080b10; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-line); }
+    .deck-badge { font-weight: 900; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .deck-badge.a { color: var(--accent-red); }
+    .deck-badge.b { color: var(--accent-cyan); }
+    .song-status { font-size: 11px; color: var(--text-muted); }
+
+    /* Visor de Video / Carátula */
+    .view-screen { width: 100%; height: 150px; background: #000; border-radius: 6px; border: 1px solid var(--border-line); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; }
+
+    /* Controles Estilo Prestige (Inferiores al Deck) */
+    .controls-grid { display: flex; flex-direction: column; gap: 6px; background: #0e131d; padding: 8px; border-radius: 6px; border: 1px solid var(--border-line); }
+    
+    .transport-row { display: flex; gap: 4px; }
+    .btn-control { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 800; border-radius: 4px; border: 1px solid var(--border-line); background: #1a2230; color: #fff; cursor: pointer; text-align: center; }
+    .btn-control.play { background: var(--accent-red); color: #fff; border: none; }
+    .btn-control.play:hover { opacity: 0.9; }
+
+    .adjust-row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: var(--text-muted); background: #141b27; padding: 6px 8px; border-radius: 4px; }
+    .adjust-group { display: flex; align-items: center; gap: 6px; }
+    .adjust-group button { background: #222d42; color: #fff; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-weight: bold; }
+    
+    .keylock-btn { width: 100%; background: #222d42; color: var(--accent-orange); border: 1px solid var(--border-line); padding: 6px; border-radius: 4px; font-size: 10px; font-weight: 900; cursor: pointer; text-align: center; letter-spacing: 1px; }
+
+    /* Mezclador Central */
+    .mixer-box { background: var(--panel-bg); border: 1px solid var(--border-line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
+    .mixer-faders { display: flex; justify-content: space-around; background: #080b10; padding: 10px; border-radius: 6px; border: 1px solid var(--border-line); }
+    .fader-col { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10px; font-weight: bold; }
+    .fader-col input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 14px; height: 90px; accent-color: var(--accent-orange); cursor: pointer; }
+
+    .auto-mix-buttons { display: flex; flex-direction: column; gap: 5px; }
+    .auto-btn { background: #1a2230; border: 1px solid var(--border-line); color: #fff; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-align: center; }
+    .auto-btn:hover { background: var(--border-line); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="font-weight: 900; color: var(--accent-orange); letter-spacing: 1px;">🎛️ DL MIX-MASTER PRO</div>
+    <div class="top-menu">
+      <span>📁 EXPLORADOR</span>
+      <span>📱 REMOTO QR</span>
+      <span>📺 PANTALLA TV</span>
+      <span>⚙️ UNIDADES</span>
+      <span>🚨 PÁNICO</span>
+      <span>❓ CÓMO USAR</span>
+    </div>
+  </header>
+
+  <div class="console-layout">
+    
+    <!-- DECK A -->
+    <div class="deck-box">
+      <div class="deck-header">
+        <span class="deck-badge a">🔴 DECK A</span>
+        <span class="song-status" id="status-a">Sin pista cargada</span>
+      </div>
+
+      <div class="view-screen">
+        <span style="font-size: 22px;">🎵</span>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Arrastra una canción o selecciónala</span>
+      </div>
+
+      <div class="controls-grid">
+        <div class="transport-row">
+          <button class="btn-control">CUE</button>
+          <button class="btn-control">SET</button>
+          <button class="btn-control play">PLAY ▶</button>
+          <button class="btn-control">STOP</button>
+          <button class="btn-control">SIGUIENTE</button>
+        </div>
+
+        <div class="adjust-row">
+          <span>TONO</span>
+          <div class="adjust-group">
+            <button>-</button>
+            <span style="color:#fff">0 SEMITONOS</span>
+            <button>+</button>
+          </div>
+          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+        </div>
+
+        <div class="adjust-row">
+          <span>TEMPO</span>
+          <div class="adjust-group">
+            <button>-</button>
+            <span style="color:var(--accent-orange)">100% VELOCIDAD</span>
+            <button>+</button>
+          </div>
+          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+        </div>
+
+        <button class="keylock-btn">KEY LOCK ON</button>
+      </div>
+    </div>
+
+    <!-- MEZCLADOR CENTRAL -->
+    <div class="mixer-box">
+      <div class="mixer-faders">
+        <div class="fader-col">
+          <span style="color:var(--accent-red)">VOL A</span>
+          <input type="range" min="0" max="100" value="100">
+        </div>
+        <div class="fader-col">
+          <span style="color:var(--accent-cyan)">VOL B</span>
+          <input type="range" min="0" max="100" value="100">
+        </div>
+      </div>
+
+      <div class="auto-mix-buttons">
+        <button class="auto-btn">⚡ AUTO CROSSFADE</button>
+        <button class="auto-btn">🔗 AUTO CUE ON</button>
+      </div>
+
+      <div style="background:#080b10; border:1px solid var(--border-line); padding:6px; border-radius:6px; text-align:center;">
+        <span style="font-size:9px; font-weight:900; color:var(--accent-orange); letter-spacing:1px;">CROSSFADER</span>
+        <input type="range" min="0" max="100" value="50" style="width:100%; margin-top:4px; accent-color:var(--accent-orange); cursor:pointer;">
+      </div>
+    </div>
+
+    <!-- DECK B -->
+    <div class="deck-box">
+      <div class="deck-header">
+        <span class="deck-badge b">🔵 DECK B</span>
+        <span class="song-status" id="status-b">Sin pista cargada</span>
+      </div>
+
+      <div class="view-screen">
+        <span style="font-size: 22px;">🎵</span>
+        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Arrastra una canción o selecciónala</span>
+      </div>
+
+      <div class="controls-grid">
+        <div class="transport-row">
+          <button class="btn-control">CUE</button>
+          <button class="btn-control">SET</button>
+          <button class="btn-control play">PLAY ▶</button>
+          <button class="btn-control">STOP</button>
+          <button class="btn-control">SIGUIENTE</button>
+        </div>
+
+        <div class="adjust-row">
+          <span>TONO</span>
+          <div class="adjust-group">
+            <button>-</button>
+            <span style="color:#fff">0 SEMITONOS</span>
+            <button>+</button>
+          </div>
+          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+        </div>
+
+        <div class="adjust-row">
+          <span>TEMPO</span>
+          <div class="adjust-group">
+            <button>-</button>
+            <span style="color:var(--accent-orange)">100% VELOCIDAD</span>
+            <button>+</button>
+          </div>
+          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+        </div>
+
+        <button class="keylock-btn">KEY LOCK ON</button>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
