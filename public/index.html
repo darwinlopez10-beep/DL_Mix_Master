@@ -45,25 +45,13 @@ cat << 'EOF' > public/index.html
     .deck-top-info {
       display: flex; justify-content: space-between; align-items: center; background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
-    .deck-tag { font-weight: 900; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    .deck-tag { font-weight: 900; font-size: 12px; }
     .deck-tag.a { color: var(--orange-accent); }
     .deck-tag.b { color: var(--cyan-accent); }
-    
-    .status-led { width: 8px; height: 8px; border-radius: 50%; background: var(--red-accent); display: inline-block; box-shadow: 0 0 6px var(--red-accent); }
-    .status-led.active { background: var(--green-accent); box-shadow: 0 0 6px var(--green-accent); }
-
     .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     .video-viewport { width: 100%; height: 190px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
     .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
-
-    .placeholder-screen {
-      width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-      background-size: cover; background-position: center; position: relative;
-    }
-    .placeholder-overlay {
-      position: absolute; inset: 0; background: rgba(0,0,0,0.75); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px; text-align: center;
-    }
 
     .timeline-control {
       background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
@@ -83,10 +71,8 @@ cat << 'EOF' > public/index.html
 
     .transport-row { display: flex; gap: 4px; }
     .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
-    .t-btn.play { background: #333; color: #fff; }
-    .t-btn.play.active { background: var(--green-accent); color: #000; }
-    .t-btn.cue { background: #333; color: #fff; }
-    .t-btn.cue.active { background: var(--orange-accent); color: #000; box-shadow: 0 0 10px var(--orange-accent); }
+    .t-btn.play { background: var(--green-accent); color: #000; }
+    .t-btn.cue { background: var(--orange-accent); color: #000; }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
     .mixer-panel {
@@ -115,9 +101,8 @@ cat << 'EOF' > public/index.html
     .tree-node.active { background: #1f2636; color: var(--orange-accent); font-weight: bold; }
 
     .search-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-    .search-input-group { display: flex; gap: 6px; position: relative; }
-    .search-input-group input { flex: 1; padding: 8px 30px 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
-    .clear-btn { position: absolute; right: 140px; top: 50%; transform: translateY(-50%); color: var(--text-sub); cursor: pointer; font-weight: bold; font-size: 12px; }
+    .search-input-group { display: flex; gap: 6px; }
+    .search-input-group input { flex: 1; padding: 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
     .search-input-group button { padding: 8px 16px; background: var(--orange-accent); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
 
     .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
@@ -155,17 +140,12 @@ cat << 'EOF' > public/index.html
     <!-- DECK A -->
     <div class="deck-panel">
       <div class="deck-top-info">
-        <span class="deck-tag a"><span id="led-a" class="status-led"></span> DECK A</span>
+        <span class="deck-tag a">DECK A</span>
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport" id="container-a">
-        <div class="placeholder-screen">
-          <div class="placeholder-overlay">
-            <span style="font-size:24px">🎵</span>
-            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
-          </div>
-        </div>
+      <div class="video-viewport">
+        <div id="player-a"></div>
       </div>
 
       <div class="timeline-control">
@@ -194,8 +174,8 @@ cat << 'EOF' > public/index.html
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('A')">SYNC</button>
-        <button class="t-btn cue active" id="btn-cue-a" onclick="pressCue('A')">CUE</button>
-        <button class="t-btn play" id="btn-play-a" onclick="pressPlay('A')">PLAY ▶</button>
+        <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
+        <button class="t-btn play" id="btn-play-a" onclick="controlDeck('A', 'toggle')">PLAY ▶</button>
       </div>
     </div>
 
@@ -230,17 +210,12 @@ cat << 'EOF' > public/index.html
     <!-- DECK B -->
     <div class="deck-panel">
       <div class="deck-top-info">
-        <span class="deck-tag b"><span id="led-b" class="status-led"></span> DECK B</span>
+        <span class="deck-tag b">DECK B</span>
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport" id="container-b">
-        <div class="placeholder-screen">
-          <div class="placeholder-overlay">
-            <span style="font-size:24px">🎵</span>
-            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
-          </div>
-        </div>
+      <div class="video-viewport">
+        <div id="player-b"></div>
       </div>
 
       <div class="timeline-control">
@@ -269,8 +244,8 @@ cat << 'EOF' > public/index.html
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('B')">SYNC</button>
-        <button class="t-btn cue active" id="btn-cue-b" onclick="pressCue('B')">CUE</button>
-        <button class="t-btn play" id="btn-play-b" onclick="pressPlay('B')">PLAY ▶</button>
+        <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
+        <button class="t-btn play" id="btn-play-b" onclick="controlDeck('B', 'toggle')">PLAY ▶</button>
       </div>
     </div>
 
@@ -284,7 +259,6 @@ cat << 'EOF' > public/index.html
       <div class="search-content">
         <div class="search-input-group" id="searchBarGroup">
           <input type="text" id="searchInput" placeholder="Nombre de la canción o artista..." onkeydown="if(event.key==='Enter') doSearch()">
-          <span class="clear-btn" onclick="clearSearch()">✖</span>
           <button onclick="doSearch()">BUSCAR KARAOKE</button>
         </div>
 
@@ -299,13 +273,38 @@ cat << 'EOF' > public/index.html
 
   <script>
     let playerA = null, playerB = null;
-    let pendingA = null, pendingB = null;
+    let manualPlayA = false, manualPlayB = false;
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
 
+    // Inicialización estable
     function onYouTubeIframeAPIReady() {
+      playerA = new YT.Player('player-a', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 },
+        events: {
+          'onStateChange': (e) => handleStateChange('A', e)
+        }
+      });
+
+      playerB = new YT.Player('player-b', {
+        height: '100%', width: '100%',
+        playerVars: { 'autoplay': 0, 'controls': 0, 'rel': 0, 'enablejsapi': 1 },
+        events: {
+          'onStateChange': (e) => handleStateChange('B', e)
+        }
+      });
+
       setInterval(updateTimers, 500);
+    }
+
+    // Intercepta el arranque automático no deseado y lo fuerza a pausa
+    function handleStateChange(deck, event) {
+      const isManual = (deck === 'A') ? manualPlayA : manualPlayB;
+      if (event.data === YT.PlayerState.PLAYING && !isManual) {
+        event.target.pauseVideo();
+      }
     }
 
     function formatTime(sec) {
@@ -334,108 +333,6 @@ cat << 'EOF' > public/index.html
       } catch(e){}
     }
 
-    // PREPARAR CANCIÓN (MODO DUMMY - NO CREA IFRAME NI REPRODUCE NADA)
-    function stageSong(deck, videoId, title) {
-      const isA = (deck === 'A');
-      const container = document.getElementById(isA ? 'container-a' : 'container-b');
-      const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-      // Destruir player previo si existía
-      if (isA) { if (playerA) { try { playerA.destroy(); } catch(e){} playerA = null; } pendingA = { videoId, title }; }
-      else { if (playerB) { try { playerB.destroy(); } catch(e){} playerB = null; } pendingB = { videoId, title }; }
-
-      // Mostrar pantalla de vista previa
-      container.innerHTML = `
-        <div class="placeholder-screen" style="background-image: url('${thumbUrl}')">
-          <div class="placeholder-overlay">
-            <span style="font-size:11px; font-weight:bold; color:var(--orange-accent)">LISTA PARA REPRODUCIR</span>
-            <span style="font-size:12px; font-weight:800; color:#fff">${title}</span>
-            <span style="font-size:10px; color:var(--text-sub)">Presiona PLAY ▶ para iniciar</span>
-          </div>
-        </div>
-      `;
-
-      document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
-      setTransportState(deck, 'cue');
-      saveToHistory(title, videoId);
-    }
-
-    function pressPlay(deck) {
-      const isA = (deck === 'A');
-      let p = isA ? playerA : playerB;
-      const pending = isA ? pendingA : pendingB;
-
-      // Si hay una canción pendiente y el player no existe, lo creamos e iniciamos en este instante
-      if (!p && pending) {
-        const container = document.getElementById(isA ? 'container-a' : 'container-b');
-        const targetElemId = isA ? 'player-a' : 'player-b';
-        container.innerHTML = `<div id="${targetElemId}"></div>`;
-
-        const newPlayer = new YT.Player(targetElemId, {
-          height: '100%',
-          width: '100%',
-          videoId: pending.videoId,
-          playerVars: {
-            'autoplay': 1,
-            'controls': 0,
-            'rel': 0,
-            'enablejsapi': 1
-          },
-          events: {
-            'onReady': (e) => {
-              const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
-              e.target.setVolume(currentVol);
-              e.target.playVideo();
-              setTransportState(deck, 'play');
-            }
-          }
-        });
-
-        if (isA) { playerA = newPlayer; pendingA = null; }
-        else { playerB = newPlayer; pendingB = null; }
-        return;
-      }
-
-      // Si el player ya existe (estaba pausado), le damos resume
-      if (p && typeof p.playVideo === 'function') {
-        const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
-        p.setVolume(currentVol);
-        p.playVideo();
-        setTransportState(deck, 'play');
-      }
-    }
-
-    function pressCue(deck) {
-      const isA = (deck === 'A');
-      const p = isA ? playerA : playerB;
-      if (p && typeof p.pauseVideo === 'function') {
-        p.pauseVideo();
-        p.seekTo(0, true);
-      }
-      setTransportState(deck, 'cue');
-    }
-
-    function setTransportState(deck, activeState) {
-      const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-      const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
-      const led = document.getElementById(deck === 'A' ? 'led-a' : 'led-b');
-
-      if (activeState === 'play') {
-        btnPlay.classList.add('active');
-        btnCue.classList.remove('active');
-        led.classList.add('active');
-      } else {
-        btnCue.classList.add('active');
-        btnPlay.classList.remove('active');
-        led.classList.remove('active');
-      }
-    }
-
-    function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('searchInput').focus();
-    }
-
     function changeSpeed(deck, delta) {
       if (deck === 'A') {
         speedA = Math.min(Math.max(0.5, speedA + delta), 2.0);
@@ -445,6 +342,50 @@ cat << 'EOF' > public/index.html
         speedB = Math.min(Math.max(0.5, speedB + delta), 2.0);
         if (playerB && playerB.setPlaybackRate) playerB.setPlaybackRate(speedB);
         document.getElementById('speed-label-b').innerText = speedB.toFixed(2) + 'x';
+      }
+    }
+
+    // CARGA DE CANCIÓN GARANTIZADA
+    function loadVideoDirect(deck, videoId, title) {
+      const targetPlayer = (deck === 'A') ? playerA : playerB;
+      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+
+      if (deck === 'A') manualPlayA = false;
+      if (deck === 'B') manualPlayB = false;
+
+      if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
+        targetPlayer.cueVideoById(videoId);
+        document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
+        if (btn) btn.innerText = 'PLAY ▶';
+      }
+
+      saveToHistory(title, videoId);
+    }
+
+    function controlDeck(deck, action) {
+      const p = (deck === 'A') ? playerA : playerB;
+      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+      if (!p || typeof p.getPlayerState !== 'function') return;
+
+      if (action === 'toggle') {
+        const state = p.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          if (deck === 'A') manualPlayA = false;
+          if (deck === 'B') manualPlayB = false;
+          p.pauseVideo();
+          btn.innerText = 'PLAY ▶';
+        } else {
+          if (deck === 'A') manualPlayA = true;
+          if (deck === 'B') manualPlayB = true;
+          p.playVideo();
+          btn.innerText = 'PAUSE ❚❚';
+        }
+      } else if (action === 'cue') {
+        if (deck === 'A') manualPlayA = false;
+        if (deck === 'B') manualPlayB = false;
+        p.pauseVideo();
+        p.seekTo(0, true);
+        btn.innerText = 'PLAY ▶';
       }
     }
 
@@ -550,7 +491,7 @@ cat << 'EOF' > public/index.html
     function selectSong(deck, index) {
       const song = currentSongsList[index];
       if (!song) return;
-      stageSong(deck, song.videoId, song.title);
+      loadVideoDirect(deck, song.videoId, song.title);
     }
 
     function saveToHistory(title, videoId) {
@@ -574,8 +515,8 @@ cat << 'EOF' > public/index.html
         row.innerHTML = `
           <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
           <div style="display:flex; gap:6px">
-            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
-            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
           </div>
         `;
         list.appendChild(row);
