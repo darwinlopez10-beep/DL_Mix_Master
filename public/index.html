@@ -271,7 +271,8 @@
   </div>
 
   <script>
-    // PEGA TU CLAVE DE GOOGLE YOUTUBE DATA API V3 AQUÍ:
+    // Si posees una API Key oficial de Google, colócala aquí.
+    // De lo contrario, la aplicación usará automáticamente la API pública de respaldo.
     const YOUTUBE_API_KEY = 'TU_CLAVE_API_AQUI';
 
     let playerA = null, playerB = null;
@@ -472,37 +473,54 @@
       if (!q.trim()) return;
 
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando en YouTube API...</div>';
-
-      if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'TU_CLAVE_API_AQUI') {
-        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ Configura tu YOUTUBE_API_KEY en el código HTML.</div>';
-        return;
-      }
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas karaoke...</div>';
 
       const query = encodeURIComponent(q + ' karaoke');
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${query}&type=video&key=${YOUTUBE_API_KEY}`;
 
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        
-        const data = await res.json();
-        
-        if (data.items && data.items.length > 0) {
-          currentSongsList = data.items.map(item => ({
-            videoId: item.id.videoId,
-            title: item.snippet.title,
-            duration: ''
-          }));
-
-          renderResultsList();
-        } else {
-          list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">No se encontraron pistas para esta búsqueda.</div>';
+      // 1. Intento con Google YouTube Data API v3 si la clave está configurada
+      if (YOUTUBE_API_KEY && YOUTUBE_API_KEY !== 'TU_CLAVE_API_AQUI') {
+        try {
+          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${query}&type=video&key=${YOUTUBE_API_KEY}`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.items && data.items.length > 0) {
+              currentSongsList = data.items.map(item => ({
+                videoId: item.id.videoId,
+                title: item.snippet.title,
+                duration: ''
+              }));
+              renderResultsList();
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('API oficial con detalles, utilizando servidor alternativo...', error);
         }
-      } catch (error) {
-        console.error('Error YouTube API:', error);
-        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ Error al conectar con YouTube Data API. Verifica tu API Key o cuota diaria.</div>';
       }
+
+      // 2. Respaldo automático sin necesidad de API Key
+      try {
+        const fallbackUrl = `https://pipedapi.kavin.rocks/search?q=${query}&filter=videos`;
+        const res = await fetch(fallbackUrl);
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.items || data;
+          if (items && items.length > 0) {
+            currentSongsList = items.filter(item => item.url || item.id).slice(0, 15).map(item => ({
+              videoId: item.url ? item.url.replace('/watch?v=', '') : item.id,
+              title: item.title,
+              duration: ''
+            }));
+            renderResultsList();
+            return;
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Error en servicio de respaldo:', fallbackError);
+      }
+
+      list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ No se pudieron obtener resultados en este momento. Intenta nuevamente.</div>';
     }
 
     function renderResultsList() {
@@ -515,7 +533,6 @@
       currentSongsList.forEach((song, idx) => {
         const row = document.createElement('div');
         row.className = 'song-row';
-        const cleanTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         row.innerHTML = `
           <span><strong>${song.title}</strong></span>
           <div style="display:flex; gap:6px">
