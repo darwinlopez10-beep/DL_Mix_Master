@@ -126,11 +126,12 @@
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
 
-        /* Reorganización: QR a la izquierda, Buscadores e Historial a la derecha */
+        /* Distribución estricta: QR Izquierda (300px), Buscadores Derecha (Flex 1) */
         .control-grid-layout {
             display: grid;
-            grid-template-columns: 320px 1fr;
+            grid-template-columns: 280px 1fr;
             gap: 20px;
+            align-items: stretch;
         }
 
         @media (max-width: 900px) {
@@ -151,6 +152,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            height: 100%;
         }
 
         #qrcode {
@@ -190,7 +192,7 @@
         }
 
         .search-box h3 {
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-bright);
         }
 
@@ -206,7 +208,7 @@
             border: 1px solid var(--border-color);
             background: var(--bg-color);
             color: var(--text-bright);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .file-upload-btn {
@@ -218,7 +220,7 @@
             cursor: pointer;
             font-weight: bold;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: background 0.2s;
             flex: 1;
         }
@@ -237,7 +239,7 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: background 0.2s;
         }
 
@@ -265,28 +267,28 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 12px;
-            max-height: 140px;
+            max-height: 120px;
             overflow-y: auto;
         }
 
         .history-box h4 {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-bright);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         #historyList {
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
 
         #historyList li {
             background: var(--bg-color);
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 4px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             border: 1px solid var(--border-color);
             white-space: nowrap;
             overflow: hidden;
@@ -371,10 +373,10 @@
                 
                 <!-- COLUMNA IZQUIERDA: Código QR para Tablet -->
                 <div class="qr-section">
-                    <h3>📱 Control Remoto (Tablet)</h3>
-                    <p id="peerStatus" style="color: #38bdf8; font-size: 0.85rem;">Conectando...</p>
+                    <h3>📱 Control Remoto</h3>
+                    <p id="peerStatus" style="color: #38bdf8; font-size: 0.8rem;">Conectando...</p>
                     <div id="qrcode"></div>
-                    <small style="color: #8b949e; font-size: 0.8rem;">Escanea para abrir la app a distancia.</small>
+                    <small style="color: #8b949e; font-size: 0.75rem;">Escanea con tu tablet para abrir la app a distancia.</small>
                 </div>
 
                 <!-- COLUMNA DERECHA: Buscadores e Historial -->
@@ -382,11 +384,11 @@
                     
                     <div class="search-grid">
                         
-                        <!-- Búsqueda en YouTube / Web -->
+                        <!-- Búsqueda en YouTube -->
                         <div class="search-box">
                             <h3>🔍 YouTube Karaoke</h3>
                             <div class="input-group">
-                                <input type="text" id="youtubeInput" placeholder="Pega enlace de YouTube (mp4/embed)...">
+                                <input type="text" id="youtubeInput" placeholder="Pega enlace de YouTube...">
                                 <button class="btn-youtube" onclick="cargarYouTube()">Cargar</button>
                             </div>
                             <button class="btn-blue" style="font-size: 0.8rem; padding: 6px;" onclick="abrirBusquedaYouTube()">Abrir Buscador YT</button>
@@ -406,7 +408,7 @@
 
                     <!-- Historial de Reproducción -->
                     <div class="history-box">
-                        <h4>📜 Historial de Canciones Reproducidas</h4>
+                        <h4>📜 Historial de Canciones</h4>
                         <ul id="historyList">
                             <li style="color: #8b949e; text-align: center;">El historial está vacío.</li>
                         </ul>
@@ -445,7 +447,7 @@
 
         function agregarAlHistorial(nombre) {
             historialItems.unshift(nombre);
-            if (historialItems.length > 10) historialItems.pop(); // Máximo 10 elementos
+            if (historialItems.length > 10) historialItems.pop();
             
             historyList.innerHTML = "";
             historialItems.forEach(item => {
@@ -475,7 +477,7 @@
             }
         }
 
-        // --- 2. YOUTUBE (ENLACE DIRECTO O VENTANA EXTERNA) ---
+        // --- 2. YOUTUBE ---
         function abrirBusquedaYouTube() {
             window.open("https://www.youtube.com/results?search_query=karaoke", "_blank");
         }
@@ -487,7 +489,6 @@
                 return;
             }
 
-            // Convertimos enlaces normales de youtube a formato embed si es necesario
             let videoId = "";
             if (urlInput.includes("youtu.be/")) {
                 videoId = urlInput.split("youtu.be/")[1].split("?")[0];
@@ -542,8 +543,8 @@
             document.getElementById('qrcode').innerHTML = "";
             new QRCode(document.getElementById("qrcode"), {
                 text: currentUrl,
-                width: 140,
-                height: 140,
+                width: 130,
+                height: 130,
                 colorDark: "#000000",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
