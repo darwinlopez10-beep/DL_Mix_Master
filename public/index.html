@@ -1,201 +1,597 @@
+cat << 'EOF' > public/index.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master Pro - Consola Estilo Prestige</title>
+  <title>DL Mix-Master Pro - Consola DJ Ultra</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     :root {
-      --bg-dark: #0b0f17;
-      --panel-bg: #131822;
-      --card-bg: #1a2230;
-      --accent-red: #ff3b30;
-      --accent-cyan: #00d2ff;
-      --accent-orange: #ff9500;
-      --text-main: #ffffff;
-      --text-muted: #8e9aaf;
-      --border-line: #222d42;
+      --bg-main: #0e1117;
+      --panel-bg: #161b26;
+      --card-bg: #1f2636;
+      --orange-accent: #ff6b00;
+      --cyan-accent: #00d4ff;
+      --green-accent: #00e676;
+      --red-accent: #ff1744;
+      --text-bright: #ffffff;
+      --text-sub: #8c9ba5;
+      --border-color: #2a3346;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
-    body { background-color: var(--bg-dark); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; user-select: none; }
+    body { background-color: var(--bg-main); color: var(--text-bright); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Barra Superior */
-    header { background: #070a0f; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-line); font-size: 12px; }
-    .top-menu { display: flex; gap: 15px; align-items: center; color: var(--text-muted); font-weight: 600; }
-    .top-menu span { cursor: pointer; display: flex; gap: 5px; align-items: center; }
-    .top-menu span:hover { color: var(--accent-orange); }
+    header {
+      background: #080a0e; padding: 6px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color);
+    }
+    .logo { font-size: 15px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .top-actions { display: flex; gap: 8px; }
+    .btn-action {
+      background: #222a3d; color: #fff; border: 1px solid #36425e; padding: 5px 12px;
+      font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-action.tv { background: var(--orange-accent); color: #000; border: none; }
 
-    /* Contenedor Principal de la Consola */
-    .console-layout { display: grid; grid-template-columns: 1fr 280px 1fr; gap: 10px; padding: 10px; flex: 1; overflow-y: auto; }
+    .console-container {
+      display: grid; grid-template-columns: 1fr 340px 1fr; grid-template-rows: auto 1fr; gap: 8px; padding: 8px; flex: 1; height: calc(100vh - 42px); overflow-y: auto;
+    }
 
-    /* Paneles de los Decks A y B */
-    .deck-box { background: var(--panel-bg); border: 1px solid var(--border-line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .deck-header { display: flex; justify-content: space-between; align-items: center; background: #080b10; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-line); }
-    .deck-badge { font-weight: 900; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-    .deck-badge.a { color: var(--accent-red); }
-    .deck-badge.b { color: var(--accent-cyan); }
-    .song-status { font-size: 11px; color: var(--text-muted); }
+    .deck-panel {
+      background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
+    }
 
-    /* Visor de Video / Carátula */
-    .view-screen { width: 100%; height: 150px; background: #000; border-radius: 6px; border: 1px solid var(--border-line); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; }
-
-    /* Controles Estilo Prestige (Inferiores al Deck) */
-    .controls-grid { display: flex; flex-direction: column; gap: 6px; background: #0e131d; padding: 8px; border-radius: 6px; border: 1px solid var(--border-line); }
+    .deck-top-info {
+      display: flex; justify-content: space-between; align-items: center; background: #080a0e; padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border-color);
+    }
+    .deck-tag { font-weight: 900; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    .deck-tag.a { color: var(--orange-accent); }
+    .deck-tag.b { color: var(--cyan-accent); }
     
+    .status-led { width: 8px; height: 8px; border-radius: 50%; background: var(--red-accent); display: inline-block; box-shadow: 0 0 6px var(--red-accent); }
+    .status-led.active { background: var(--green-accent); box-shadow: 0 0 6px var(--green-accent); }
+
+    .song-title-display { font-size: 11px; font-weight: 600; color: #fff; max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+    .video-viewport { width: 100%; height: 190px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color); position: relative; }
+    .video-viewport div, .video-viewport iframe { width: 100% !important; height: 100% !important; border: none; }
+
+    .placeholder-screen {
+      width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background-size: cover; background-position: center; position: relative;
+    }
+    .placeholder-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.75); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; padding: 10px; text-align: center;
+    }
+
+    .timeline-control {
+      background: #080a0e; padding: 6px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2px;
+    }
+    .timeline-time { display: flex; justify-content: space-between; font-size: 10px; color: var(--orange-accent); font-weight: bold; }
+    .timeline-slider { width: 100%; accent-color: var(--orange-accent); cursor: pointer; height: 4px; }
+
+    .pitch-control-row {
+      display: flex; align-items: center; justify-content: space-between; background: #080a0e; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 10px; font-weight: bold;
+    }
+    .pitch-btn { background: #202738; border: 1px solid #34405c; color: #fff; padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 3px; cursor: pointer; }
+
+    .pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+    .pad-btn {
+      background: #202738; border: 1px solid #34405c; color: var(--text-bright); padding: 6px 0; font-size: 10px; font-weight: 700; border-radius: 3px; cursor: pointer; text-align: center;
+    }
+
     .transport-row { display: flex; gap: 4px; }
-    .btn-control { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 800; border-radius: 4px; border: 1px solid var(--border-line); background: #1a2230; color: #fff; cursor: pointer; text-align: center; }
-    .btn-control.play { background: var(--accent-red); color: #fff; border: none; }
-    .btn-control.play:hover { opacity: 0.9; }
+    .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
+    .t-btn.play { background: #333; color: #fff; }
+    .t-btn.play.active { background: var(--green-accent); color: #000; }
+    .t-btn.cue { background: #333; color: #fff; }
+    .t-btn.cue.active { background: var(--orange-accent); color: #000; box-shadow: 0 0 10px var(--orange-accent); }
+    .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
-    .adjust-row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold; color: var(--text-muted); background: #141b27; padding: 6px 8px; border-radius: 4px; }
-    .adjust-group { display: flex; align-items: center; gap: 6px; }
-    .adjust-group button { background: #222d42; color: #fff; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-weight: bold; }
-    
-    .keylock-btn { width: 100%; background: #222d42; color: var(--accent-orange); border: 1px solid var(--border-line); padding: 6px; border-radius: 4px; font-size: 10px; font-weight: 900; cursor: pointer; text-align: center; letter-spacing: 1px; }
+    .mixer-panel {
+      background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
+    }
+    .volume-faders-row {
+      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+    }
+    .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
+    .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
 
-    /* Mezclador Central */
-    .mixer-box { background: var(--panel-bg); border: 1px solid var(--border-line); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px; justify-content: space-between; }
-    .mixer-faders { display: flex; justify-content: space-around; background: #080b10; padding: 10px; border-radius: 6px; border: 1px solid var(--border-line); }
-    .fader-col { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 10px; font-weight: bold; }
-    .fader-col input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 14px; height: 90px; accent-color: var(--accent-orange); cursor: pointer; }
+    .eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; background: var(--card-bg); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color); }
+    .knob-unit { display: flex; flex-direction: column; align-items: center; font-size: 9px; color: #fff; font-weight: 800; gap: 2px; }
+    .knob-unit input[type=range] { width: 100%; accent-color: var(--orange-accent); cursor: pointer; }
 
-    .auto-mix-buttons { display: flex; flex-direction: column; gap: 5px; }
-    .auto-btn { background: #1a2230; border: 1px solid var(--border-line); color: #fff; padding: 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; text-align: center; }
-    .auto-btn:hover { background: var(--border-line); }
+    .clean-crossfader-box { background: #080a0e; border: 1px solid var(--border-color); padding: 6px; border-radius: 4px; text-align: center; }
+    .crossfader-label { font-size: 9px; font-weight: 900; color: var(--orange-accent); letter-spacing: 1px; }
+    .clean-crossfader-box input[type=range] { width: 100%; margin-top: 4px; appearance: none; height: 6px; background: #1a212f; border-radius: 3px; outline: none; border: 1px solid #2f3b56; }
+    .clean-crossfader-box input[type=range]::-webkit-slider-thumb { appearance: none; width: 20px; height: 24px; background: var(--orange-accent); border-radius: 3px; cursor: pointer; border: 2px solid #ffffff; }
+
+    .browser-panel {
+      grid-column: 1 / 4; background: var(--panel-bg); border-radius: 6px; padding: 10px; display: flex; gap: 10px; border: 1px solid var(--border-color); min-height: 380px;
+    }
+    .tree-sidebar { width: 160px; background: #080a0e; border-radius: 4px; padding: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 6px; color: var(--text-sub); border: 1px solid var(--border-color); }
+    .tree-node { padding: 6px 10px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .tree-node.active { background: #1f2636; color: var(--orange-accent); font-weight: bold; }
+
+    .search-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .search-input-group { display: flex; gap: 6px; position: relative; }
+    .search-input-group input { flex: 1; padding: 8px 30px 8px 12px; background: #080a0e; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-size: 13px; outline: none; }
+    .clear-btn { position: absolute; right: 140px; top: 50%; transform: translateY(-50%); color: var(--text-sub); cursor: pointer; font-weight: bold; font-size: 12px; }
+    .search-input-group button { padding: 8px 16px; background: var(--orange-accent); color: #000; border: none; border-radius: 4px; font-weight: 800; cursor: pointer; }
+
+    .songs-table { flex: 1; min-height: 300px; max-height: 450px; overflow-y: auto; background: #080a0e; border-radius: 4px; border: 1px solid var(--border-color); }
+    .song-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #141924; font-size: 12px; }
+    .song-row:hover { background: #161c28; }
+
+    #qr-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-content { background: var(--panel-bg); border: 2px solid var(--orange-accent); padding: 20px; border-radius: 8px; text-align: center; }
+    #qr-img { width: 180px; height: 180px; background: white; padding: 4px; border-radius: 4px; margin: 10px auto; }
   </style>
 </head>
 <body>
 
   <header>
-    <div style="font-weight: 900; color: var(--accent-orange); letter-spacing: 1px;">🎛️ DL MIX-MASTER PRO</div>
-    <div class="top-menu">
-      <span>📁 EXPLORADOR</span>
-      <span>📱 REMOTO QR</span>
-      <span>📺 PANTALLA TV</span>
-      <span>⚙️ UNIDADES</span>
-      <span>🚨 PÁNICO</span>
-      <span>❓ CÓMO USAR</span>
+    <div class="logo">🎛️ DL MIX-MASTER PRO</div>
+    <div class="top-actions">
+      <button class="btn-action" onclick="toggleQR()">📱 CONTROL REMOTO QR</button>
+      <button class="btn-action tv" onclick="openTV()">📺 PANTALLA TV (HDMI)</button>
     </div>
   </header>
 
-  <div class="console-layout">
-    
+  <div id="qr-modal">
+    <div class="modal-content">
+      <h3 style="color:var(--orange-accent)">CONTROL REMOTO MÓVIL</h3>
+      <p style="font-size:11px; color:var(--text-sub); margin-top:4px">Escanea el código con tu celular o tablet:</p>
+      <img id="qr-img" src="" alt="Cargando QR...">
+      <button class="btn-action" style="width:100%; justify-content:center; margin-top:10px" onclick="toggleQR()">CERRAR</button>
+    </div>
+  </div>
+
+  <div class="console-container">
     <!-- DECK A -->
-    <div class="deck-box">
-      <div class="deck-header">
-        <span class="deck-badge a">🔴 DECK A</span>
-        <span class="song-status" id="status-a">Sin pista cargada</span>
+    <div class="deck-panel">
+      <div class="deck-top-info">
+        <span class="deck-tag a"><span id="led-a" class="status-led"></span> DECK A</span>
+        <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="view-screen">
-        <span style="font-size: 22px;">🎵</span>
-        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Arrastra una canción o selecciónala</span>
+      <div class="video-viewport" id="container-a">
+        <div class="placeholder-screen">
+          <div class="placeholder-overlay">
+            <span style="font-size:24px">🎵</span>
+            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
+          </div>
+        </div>
       </div>
 
-      <div class="controls-grid">
-        <div class="transport-row">
-          <button class="btn-control">CUE</button>
-          <button class="btn-control">SET</button>
-          <button class="btn-control play">PLAY ▶</button>
-          <button class="btn-control">STOP</button>
-          <button class="btn-control">SIGUIENTE</button>
+      <div class="timeline-control">
+        <div class="timeline-time">
+          <span id="time-a-curr">00:00</span>
+          <span id="time-a-dur">00:00</span>
         </div>
+        <input type="range" id="seek-a" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('A', this.value)">
+      </div>
 
-        <div class="adjust-row">
-          <span>TONO</span>
-          <div class="adjust-group">
-            <button>-</button>
-            <span style="color:#fff">0 SEMITONOS</span>
-            <button>+</button>
-          </div>
-          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+      <div class="pitch-control-row">
+        <span>VELOCIDAD (BPM):</span>
+        <div>
+          <button class="pitch-btn" onclick="changeSpeed('A', -0.05)">- LENTO</button>
+          <span id="speed-label-a" style="margin: 0 4px; color:var(--orange-accent)">1.0x</span>
+          <button class="pitch-btn" onclick="changeSpeed('A', 0.05)">+ RÁPIDO</button>
         </div>
+      </div>
 
-        <div class="adjust-row">
-          <span>TEMPO</span>
-          <div class="adjust-group">
-            <button>-</button>
-            <span style="color:var(--accent-orange)">100% VELOCIDAD</span>
-            <button>+</button>
-          </div>
-          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
-        </div>
+      <div class="pads-grid">
+        <div class="pad-btn" onclick="triggerHotCue('A', 0)">HOT 1</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 25)">HOT 2</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 50)">HOT 3</div>
+        <div class="pad-btn" onclick="triggerHotCue('A', 75)">HOT 4</div>
+      </div>
 
-        <button class="keylock-btn">KEY LOCK ON</button>
+      <div class="transport-row">
+        <button class="t-btn sync" onclick="syncDecks('A')">SYNC</button>
+        <button class="t-btn cue active" id="btn-cue-a" onclick="pressCue('A')">CUE</button>
+        <button class="t-btn play" id="btn-play-a" onclick="pressPlay('A')">PLAY ▶</button>
       </div>
     </div>
 
     <!-- MEZCLADOR CENTRAL -->
-    <div class="mixer-box">
-      <div class="mixer-faders">
-        <div class="fader-col">
-          <span style="color:var(--accent-red)">VOL A</span>
-          <input type="range" min="0" max="100" value="100">
+    <div class="mixer-panel">
+      <div class="volume-faders-row">
+        <div class="fader-unit">
+          <span>VOL A</span>
+          <input type="range" id="vol-a" min="0" max="100" value="100" oninput="setChannelVolume('A', this.value)">
         </div>
-        <div class="fader-col">
-          <span style="color:var(--accent-cyan)">VOL B</span>
-          <input type="range" min="0" max="100" value="100">
+        <div class="fader-unit">
+          <span style="color:var(--cyan-accent)">VOL B</span>
+          <input type="range" id="vol-b" min="0" max="100" value="100" oninput="setChannelVolume('B', this.value)">
         </div>
       </div>
 
-      <div class="auto-mix-buttons">
-        <button class="auto-btn">⚡ AUTO CROSSFADE</button>
-        <button class="auto-btn">🔗 AUTO CUE ON</button>
+      <div class="eq-grid">
+        <div class="knob-unit"><span>HIGH A</span><input type="range" id="eq-high-a" min="0" max="100" value="50" oninput="adjustEQ('A', 'high', this.value)"></div>
+        <div class="knob-unit"><span>HIGH B</span><input type="range" id="eq-high-b" min="0" max="100" value="50" oninput="adjustEQ('B', 'high', this.value)"></div>
+        <div class="knob-unit"><span>MID A (VOZ)</span><input type="range" id="eq-mid-a" min="0" max="100" value="50" oninput="adjustEQ('A', 'mid', this.value)"></div>
+        <div class="knob-unit"><span>MID B (VOZ)</span><input type="range" id="eq-mid-b" min="0" max="100" value="50" oninput="adjustEQ('B', 'mid', this.value)"></div>
+        <div class="knob-unit"><span>LOW A (BASS)</span><input type="range" id="eq-low-a" min="0" max="100" value="50" oninput="adjustEQ('A', 'low', this.value)"></div>
+        <div class="knob-unit"><span>LOW B (BASS)</span><input type="range" id="eq-low-b" min="0" max="100" value="50" oninput="adjustEQ('B', 'low', this.value)"></div>
       </div>
 
-      <div style="background:#080b10; border:1px solid var(--border-line); padding:6px; border-radius:6px; text-align:center;">
-        <span style="font-size:9px; font-weight:900; color:var(--accent-orange); letter-spacing:1px;">CROSSFADER</span>
-        <input type="range" min="0" max="100" value="50" style="width:100%; margin-top:4px; accent-color:var(--accent-orange); cursor:pointer;">
+      <div class="clean-crossfader-box">
+        <div class="crossfader-label">CROSSFADER</div>
+        <input type="range" id="crossfader" min="0" max="100" value="50" oninput="updateCrossfader(this.value)">
       </div>
     </div>
 
     <!-- DECK B -->
-    <div class="deck-box">
-      <div class="deck-header">
-        <span class="deck-badge b">🔵 DECK B</span>
-        <span class="song-status" id="status-b">Sin pista cargada</span>
+    <div class="deck-panel">
+      <div class="deck-top-info">
+        <span class="deck-tag b"><span id="led-b" class="status-led"></span> DECK B</span>
+        <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="view-screen">
-        <span style="font-size: 22px;">🎵</span>
-        <span style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Arrastra una canción o selecciónala</span>
+      <div class="video-viewport" id="container-b">
+        <div class="placeholder-screen">
+          <div class="placeholder-overlay">
+            <span style="font-size:24px">🎵</span>
+            <span style="font-size:11px; color:var(--text-sub)">Selecciona una canción en el buscador</span>
+          </div>
+        </div>
       </div>
 
-      <div class="controls-grid">
-        <div class="transport-row">
-          <button class="btn-control">CUE</button>
-          <button class="btn-control">SET</button>
-          <button class="btn-control play">PLAY ▶</button>
-          <button class="btn-control">STOP</button>
-          <button class="btn-control">SIGUIENTE</button>
+      <div class="timeline-control">
+        <div class="timeline-time">
+          <span id="time-b-curr">00:00</span>
+          <span id="time-b-dur">00:00</span>
         </div>
+        <input type="range" id="seek-b" class="timeline-slider" value="0" min="0" max="100" oninput="seekVideo('B', this.value)">
+      </div>
 
-        <div class="adjust-row">
-          <span>TONO</span>
-          <div class="adjust-group">
-            <button>-</button>
-            <span style="color:#fff">0 SEMITONOS</span>
-            <button>+</button>
-          </div>
-          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
+      <div class="pitch-control-row">
+        <span>VELOCIDAD (BPM):</span>
+        <div>
+          <button class="pitch-btn" onclick="changeSpeed('B', -0.05)">- LENTO</button>
+          <span id="speed-label-b" style="margin: 0 4px; color:var(--cyan-accent)">1.0x</span>
+          <button class="pitch-btn" onclick="changeSpeed('B', 0.05)">+ RÁPIDO</button>
         </div>
+      </div>
 
-        <div class="adjust-row">
-          <span>TEMPO</span>
-          <div class="adjust-group">
-            <button>-</button>
-            <span style="color:var(--accent-orange)">100% VELOCIDAD</span>
-            <button>+</button>
-          </div>
-          <button style="background:#222d42; color:#fff; border:none; padding:3px 6px; border-radius:3px; cursor:pointer;">RESET</button>
-        </div>
+      <div class="pads-grid">
+        <div class="pad-btn" onclick="triggerHotCue('B', 0)">HOT 1</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 25)">HOT 2</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 50)">HOT 3</div>
+        <div class="pad-btn" onclick="triggerHotCue('B', 75)">HOT 4</div>
+      </div>
 
-        <button class="keylock-btn">KEY LOCK ON</button>
+      <div class="transport-row">
+        <button class="t-btn sync" onclick="syncDecks('B')">SYNC</button>
+        <button class="t-btn cue active" id="btn-cue-b" onclick="pressCue('B')">CUE</button>
+        <button class="t-btn play" id="btn-play-b" onclick="pressPlay('B')">PLAY ▶</button>
       </div>
     </div>
 
+    <!-- BROWSER -->
+    <div class="browser-panel">
+      <div class="tree-sidebar">
+        <div class="tree-node active" id="tab-pistas" onclick="switchTab('pistas')">📁 Karaoke Pistas</div>
+        <div class="tree-node" id="tab-historial" onclick="switchTab('historial')">🕒 Historial</div>
+      </div>
+
+      <div class="search-content">
+        <div class="search-input-group" id="searchBarGroup">
+          <input type="text" id="searchInput" placeholder="Nombre de la canción o artista..." onkeydown="if(event.key==='Enter') doSearch()">
+          <span class="clear-btn" onclick="clearSearch()">✖</span>
+          <button onclick="doSearch()">BUSCAR KARAOKE</button>
+        </div>
+
+        <div class="songs-table" id="resultsList">
+          <div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">
+            Ingresa el nombre del cantante o canción para buscar pistas de Karaoke.
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <script>
+    let playerA = null, playerB = null;
+    let pendingA = null, pendingB = null;
+    let speedA = 1.0, speedB = 1.0;
+    let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
+    let currentSongsList = [];
+
+    function onYouTubeIframeAPIReady() {
+      setInterval(updateTimers, 500);
+    }
+
+    function formatTime(sec) {
+      if (isNaN(sec) || sec === null) return "00:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updateTimers() {
+      try {
+        if (playerA && typeof playerA.getCurrentTime === 'function') {
+          const currA = playerA.getCurrentTime() || 0;
+          const durA = playerA.getDuration() || 0;
+          document.getElementById('time-a-curr').innerText = formatTime(currA);
+          document.getElementById('time-a-dur').innerText = formatTime(durA);
+          if (durA > 0) document.getElementById('seek-a').value = (currA / durA) * 100;
+        }
+        if (playerB && typeof playerB.getCurrentTime === 'function') {
+          const currB = playerB.getCurrentTime() || 0;
+          const durB = playerB.getDuration() || 0;
+          document.getElementById('time-b-curr').innerText = formatTime(currB);
+          document.getElementById('time-b-dur').innerText = formatTime(durB);
+          if (durB > 0) document.getElementById('seek-b').value = (currB / durB) * 100;
+        }
+      } catch(e){}
+    }
+
+    // PREPARAR CANCIÓN (MODO DUMMY - NO CREA IFRAME NI REPRODUCE NADA)
+    function stageSong(deck, videoId, title) {
+      const isA = (deck === 'A');
+      const container = document.getElementById(isA ? 'container-a' : 'container-b');
+      const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+      // Destruir player previo si existía
+      if (isA) { if (playerA) { try { playerA.destroy(); } catch(e){} playerA = null; } pendingA = { videoId, title }; }
+      else { if (playerB) { try { playerB.destroy(); } catch(e){} playerB = null; } pendingB = { videoId, title }; }
+
+      // Mostrar pantalla de vista previa
+      container.innerHTML = `
+        <div class="placeholder-screen" style="background-image: url('${thumbUrl}')">
+          <div class="placeholder-overlay">
+            <span style="font-size:11px; font-weight:bold; color:var(--orange-accent)">LISTA PARA REPRODUCIR</span>
+            <span style="font-size:12px; font-weight:800; color:#fff">${title}</span>
+            <span style="font-size:10px; color:var(--text-sub)">Presiona PLAY ▶ para iniciar</span>
+          </div>
+        </div>
+      `;
+
+      document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
+      setTransportState(deck, 'cue');
+      saveToHistory(title, videoId);
+    }
+
+    function pressPlay(deck) {
+      const isA = (deck === 'A');
+      let p = isA ? playerA : playerB;
+      const pending = isA ? pendingA : pendingB;
+
+      // Si hay una canción pendiente y el player no existe, lo creamos e iniciamos en este instante
+      if (!p && pending) {
+        const container = document.getElementById(isA ? 'container-a' : 'container-b');
+        const targetElemId = isA ? 'player-a' : 'player-b';
+        container.innerHTML = `<div id="${targetElemId}"></div>`;
+
+        const newPlayer = new YT.Player(targetElemId, {
+          height: '100%',
+          width: '100%',
+          videoId: pending.videoId,
+          playerVars: {
+            'autoplay': 1,
+            'controls': 0,
+            'rel': 0,
+            'enablejsapi': 1
+          },
+          events: {
+            'onReady': (e) => {
+              const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+              e.target.setVolume(currentVol);
+              e.target.playVideo();
+              setTransportState(deck, 'play');
+            }
+          }
+        });
+
+        if (isA) { playerA = newPlayer; pendingA = null; }
+        else { playerB = newPlayer; pendingB = null; }
+        return;
+      }
+
+      // Si el player ya existe (estaba pausado), le damos resume
+      if (p && typeof p.playVideo === 'function') {
+        const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+        p.setVolume(currentVol);
+        p.playVideo();
+        setTransportState(deck, 'play');
+      }
+    }
+
+    function pressCue(deck) {
+      const isA = (deck === 'A');
+      const p = isA ? playerA : playerB;
+      if (p && typeof p.pauseVideo === 'function') {
+        p.pauseVideo();
+        p.seekTo(0, true);
+      }
+      setTransportState(deck, 'cue');
+    }
+
+    function setTransportState(deck, activeState) {
+      const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+      const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
+      const led = document.getElementById(deck === 'A' ? 'led-a' : 'led-b');
+
+      if (activeState === 'play') {
+        btnPlay.classList.add('active');
+        btnCue.classList.remove('active');
+        led.classList.add('active');
+      } else {
+        btnCue.classList.add('active');
+        btnPlay.classList.remove('active');
+        led.classList.remove('active');
+      }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchInput').focus();
+    }
+
+    function changeSpeed(deck, delta) {
+      if (deck === 'A') {
+        speedA = Math.min(Math.max(0.5, speedA + delta), 2.0);
+        if (playerA && playerA.setPlaybackRate) playerA.setPlaybackRate(speedA);
+        document.getElementById('speed-label-a').innerText = speedA.toFixed(2) + 'x';
+      } else {
+        speedB = Math.min(Math.max(0.5, speedB + delta), 2.0);
+        if (playerB && playerB.setPlaybackRate) playerB.setPlaybackRate(speedB);
+        document.getElementById('speed-label-b').innerText = speedB.toFixed(2) + 'x';
+      }
+    }
+
+    function adjustEQ(deck, type, value) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (!p) return;
+      const volBase = parseInt(document.getElementById(deck === 'A' ? 'vol-a' : 'vol-b').value);
+      const factor = parseInt(value) / 50; 
+      if (typeof p.setVolume === 'function') {
+        const adjustedVol = Math.min(100, Math.max(0, Math.round(volBase * ((factor * 0.4) + 0.6))));
+        p.setVolume(adjustedVol);
+      }
+    }
+
+    function triggerHotCue(deck, percent) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && typeof p.getDuration === 'function') {
+        const dur = p.getDuration();
+        p.seekTo((percent / 100) * dur, true);
+      }
+    }
+
+    function syncDecks(targetDeck) {
+      const source = (targetDeck === 'A') ? playerB : playerA;
+      const target = (targetDeck === 'A') ? playerA : playerB;
+      if (source && target && typeof source.getCurrentTime === 'function') {
+        target.seekTo(source.getCurrentTime(), true);
+      }
+    }
+
+    function setChannelVolume(deck, val) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && typeof p.setVolume === 'function') p.setVolume(val);
+    }
+
+    function updateCrossfader(val) {
+      if (!playerA || !playerB) return;
+      const volA = Math.cos((val / 100) * (Math.PI / 2)) * 100;
+      const volB = Math.sin((val / 100) * (Math.PI / 2)) * 100;
+      if (typeof playerA.setVolume === 'function') playerA.setVolume(volA);
+      if (typeof playerB.setVolume === 'function') playerB.setVolume(volB);
+    }
+
+    function seekVideo(deck, percent) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (p && typeof p.getDuration === 'function') {
+        const dur = p.getDuration();
+        p.seekTo((percent / 100) * dur, true);
+      }
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-pistas').classList.remove('active');
+      document.getElementById('tab-historial').classList.remove('active');
+      
+      if (tab === 'pistas') {
+        document.getElementById('tab-pistas').classList.add('active');
+        document.getElementById('searchBarGroup').style.display = 'flex';
+        renderResultsList();
+      } else if (tab === 'historial') {
+        document.getElementById('tab-historial').classList.add('active');
+        document.getElementById('searchBarGroup').style.display = 'none';
+        showHistory();
+      }
+    }
+
+    async function doSearch() {
+      const q = document.getElementById('searchInput').value;
+      if (!q) return;
+      const list = document.getElementById('resultsList');
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas de Karaoke...</div>';
+
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        currentSongsList = await res.json();
+        renderResultsList();
+      } catch (e) {
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:30px; font-size:12px">Error al buscar canciones. Reintenta.</div>';
+      }
+    }
+
+    function renderResultsList() {
+      const list = document.getElementById('resultsList');
+      list.innerHTML = '';
+      if (!currentSongsList || currentSongsList.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">Ingresa el nombre del cantante o canción para buscar pistas.</div>';
+        return;
+      }
+      currentSongsList.forEach((song, idx) => {
+        const row = document.createElement('div');
+        row.className = 'song-row';
+        row.innerHTML = `
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration || ''})</span></span>
+          <div style="display:flex; gap:6px">
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('A', ${idx})">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('B', ${idx})">+ DECK B</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function selectSong(deck, index) {
+      const song = currentSongsList[index];
+      if (!song) return;
+      stageSong(deck, song.videoId, song.title);
+    }
+
+    function saveToHistory(title, videoId) {
+      const item = { title, videoId, date: new Date().toLocaleTimeString() };
+      songHistory.unshift(item);
+      if (songHistory.length > 50) songHistory.pop();
+      localStorage.setItem('dl_history', JSON.stringify(songHistory));
+    }
+
+    function showHistory() {
+      const list = document.getElementById('resultsList');
+      if (songHistory.length === 0) {
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">El historial está vacío.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      songHistory.forEach((song) => {
+        const row = document.createElement('div');
+        row.className = 'song-row';
+        row.innerHTML = `
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
+          <div style="display:flex; gap:6px">
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="stageSong('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function openTV() { window.open('/tv.html', 'TVWindow', 'width=1280,height=720'); }
+
+    function toggleQR() {
+      const modal = document.getElementById('qr-modal');
+      const img = document.getElementById('qr-img');
+      const remoteUrl = window.location.origin + '/remote.html';
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(remoteUrl)}`;
+      modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+    }
+  </script>
 </body>
 </html>
+EOF
