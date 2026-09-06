@@ -16,7 +16,7 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     .top-controls button:hover { background: #00e676; color: #000; }
 
     /* Main DJ Console Layout */
-    .console-container { display: flex; flex: 1; padding: 8px; gap: 8px; background: #0b0d10; min-height: 320px; }
+    .console-container { display: flex; flex: 1; padding: 8px; gap: 8px; background: #0b0d10; min-height: 340px; }
     
     /* Decks */
     .deck { flex: 1; background: #171a21; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -24,14 +24,15 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     .deck-title { font-weight: bold; font-size: 14px; color: #00b0ff; }
     .deck-b .deck-title { color: #ff3d00; }
     
-    .jog-wheel { width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, #2c3240 0%, #111317 70%); border: 4px solid #3a4454; margin: 10px auto; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px #000; }
-    .jog-inner { width: 30px; height: 30px; border-radius: 50%; background: #00e676; }
-    .deck-b .jog-inner { background: #ff3d00; }
+    .screen-preview { width: 100%; height: 140px; background: #000; border: 1px solid #3a4454; margin: 8px 0; border-radius: 4px; overflow: hidden; position: relative; }
+    .screen-preview iframe, .screen-preview video { width: 100%; height: 100%; border: none; object-fit: contain; }
 
-    .deck-controls { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
-    .btn { background: #252b36; border: 1px solid #3d4657; color: #fff; padding: 6px 12px; font-weight: bold; border-radius: 3px; cursor: pointer; }
+    .deck-controls { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+    .btn { background: #252b36; border: 1px solid #3d4657; color: #fff; padding: 6px 10px; font-weight: bold; border-radius: 3px; cursor: pointer; font-size: 11px; }
+    .btn:hover { background: #323b4a; }
     .btn-play { background: #00c853; color: #000; }
     .btn-cue { background: #ffab00; color: #000; }
+    .btn-yt { background: #ff0000; color: #fff; }
 
     /* Mixer */
     .mixer { width: 220px; background: #14171d; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
@@ -39,7 +40,7 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     .eq-knob { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
     .eq-knob input { width: 80px; }
     .crossfader { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-    .crossfader input { width: 80%; }
+    .crossfader input { width: 80%; accent-color: #00e676; }
 
     /* Library Section */
     .library-container { flex: 1; background: #12151a; border-top: 2px solid #2a313d; display: flex; }
@@ -47,14 +48,17 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     .sidebar-item { padding: 6px 8px; border-radius: 3px; cursor: pointer; margin-bottom: 2px; }
     .sidebar-item:hover, .sidebar-item.active { background: #00b0ff; color: #fff; }
     
-    .main-library { flex: 1; display: flex; flex-direction: column; padding: 8px; }
-    .search-bar { margin-bottom: 8px; }
-    .search-bar input { width: 100%; padding: 6px; background: #1c2029; border: 1px solid #2a313d; color: #fff; border-radius: 3px; }
+    .main-library { flex: 1; display: flex; flex-direction: column; padding: 8px; overflow-y: auto; }
+    .search-bar { display: flex; gap: 6px; margin-bottom: 8px; }
+    .search-bar input { flex: 1; padding: 6px; background: #1c2029; border: 1px solid #2a313d; color: #fff; border-radius: 3px; }
     
     .track-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .track-table th { background: #1c2029; padding: 6px; border-bottom: 1px solid #2a313d; color: #8a94a6; }
+    .track-table th { background: #1c2029; padding: 6px; border-bottom: 1px solid #2a313d; color: #8a94a6; position: sticky; top: 0; }
     .track-table td { padding: 6px; border-bottom: 1px solid #1c2029; }
-    .track-table tr:hover { background: #252b36; cursor: pointer; }
+    .track-table tr:hover { background: #252b36; }
+    
+    .btn-deck-a { background: #00b0ff; color: #000; padding: 2px 6px; font-size: 10px; }
+    .btn-deck-b { background: #ff3d00; color: #fff; padding: 2px 6px; font-size: 10px; }
   </style>
 </head>
 <body>
@@ -71,12 +75,18 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     <div class="deck deck-a">
       <div class="deck-header">
         <span class="deck-title">DECK A</span>
-        <span id="title-a">Ninguna pista cargada</span>
+        <span id="title-a" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ninguna pista cargada</span>
       </div>
-      <div class="jog-wheel"><div class="jog-inner"></div></div>
-      <input type="file" id="file-a" accept="audio/*,video/*" style="display:none;" onchange="loadTrack('A', this)">
-      <button class="btn" onclick="document.getElementById('file-a').click()">Cargar Pista A</button>
+      
+      <div class="screen-preview" id="preview-a">
+        <div style="display:flex; justify-content:center; align-items:center; height:100%; color:#555;">DECK A VIDEO</div>
+      </div>
+
+      <input type="file" id="file-a" accept="audio/*,video/*" style="display:none;" onchange="loadLocalTrack('A', this)">
+      
       <div class="deck-controls">
+        <button class="btn" onclick="document.getElementById('file-a').click()">Local</button>
+        <button class="btn btn-yt" onclick="promptYouTube('A')">YouTube</button>
         <button class="btn btn-cue">CUE</button>
         <button class="btn btn-play" onclick="playDeck('A')">PLAY</button>
       </div>
@@ -91,8 +101,8 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
         <div class="eq-knob"><label>LOW</label><input type="range" min="0" max="100" value="50"></div>
       </div>
       <div class="crossfader">
-        <label style="font-size: 10px; margin-bottom:2px;">CROSSFADER</label>
-        <input type="range" min="0" max="100" value="50">
+        <label style="font-size: 10px; margin-bottom:2px;">CROSSFADER (A / B)</label>
+        <input type="range" id="crossfader" min="0" max="100" value="50">
       </div>
     </div>
 
@@ -100,45 +110,48 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
     <div class="deck deck-b">
       <div class="deck-header">
         <span class="deck-title">DECK B</span>
-        <span id="title-b">Ninguna pista cargada</span>
+        <span id="title-b" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ninguna pista cargada</span>
       </div>
-      <div class="jog-wheel"><div class="jog-inner"></div></div>
-      <input type="file" id="file-b" accept="audio/*,video/*" style="display:none;" onchange="loadTrack('B', this)">
-      <button class="btn" onclick="document.getElementById('file-b').click()">Cargar Pista B</button>
+      
+      <div class="screen-preview" id="preview-b">
+        <div style="display:flex; justify-content:center; align-items:center; height:100%; color:#555;">DECK B VIDEO</div>
+      </div>
+
+      <input type="file" id="file-b" accept="audio/*,video/*" style="display:none;" onchange="loadLocalTrack('B', this)">
+      
       <div class="deck-controls">
+        <button class="btn" onclick="document.getElementById('file-b').click()">Local</button>
+        <button class="btn btn-yt" onclick="promptYouTube('B')">YouTube</button>
         <button class="btn btn-cue">CUE</button>
         <button class="btn btn-play" onclick="playDeck('B')">PLAY</button>
       </div>
     </div>
   </div>
 
-  <!-- BIBLIOTECA DE PISTAS -->
+  <!-- BIBLIOTECA Y BÚSQUEDA -->
   <div class="library-container">
     <div class="sidebar">
-      <div class="sidebar-item active">📁 Pistas</div>
-      <div class="sidebar-item">⭐ Listas Karaoke</div>
-      <div class="sidebar-item">💻 Equipo</div>
+      <div class="sidebar-item active">🔍 Buscador YouTube</div>
+      <div class="sidebar-item">📁 Archivos Locales</div>
       <div class="sidebar-item">🕒 Historial</div>
     </div>
     <div class="main-library">
       <div class="search-bar">
-        <input type="text" placeholder="Buscar artista, canción o karaoke...">
+        <input type="text" id="searchInput" placeholder="Buscar canción o karaoke en YouTube..." onkeypress="if(event.key==='Enter') buscarYouTube()">
+        <button class="btn btn-yt" onclick="buscarYouTube()">Buscar YouTube</button>
       </div>
       <table class="track-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>Vista Previa</th>
             <th>Título</th>
-            <th>Artista</th>
-            <th>Duración</th>
+            <th>Cargar en DECK A</th>
+            <th>Cargar en DECK B</th>
           </tr>
         </thead>
         <tbody id="track-list">
           <tr>
-            <td>1</td>
-            <td>Selecciona "Cargar Pista" en DECK A o B para reproducir</td>
-            <td>Local</td>
-            <td>--:--</td>
+            <td colspan="4" style="text-align:center; color:#666;">Escribe un artista o tema arriba y presiona "Buscar YouTube"</td>
           </tr>
         </tbody>
       </table>
@@ -148,19 +161,87 @@ cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
   <script>
     const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
 
-    function loadTrack(deck, input) {
+    function extractYouTubeId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function loadYouTubeToDeck(deck, videoId, title) {
+      const deckLower = deck.toLowerCase();
+      document.getElementById(`title-${deckLower}`).innerText = title;
+      const previewContainer = document.getElementById(`preview-${deckLower}`);
+      
+      previewContainer.innerHTML = `
+        <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen></iframe>
+      `;
+
+      // Notificar vía WebSockets (si la pantalla TV está escuchando)
+      if(ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'load_youtube', deck: deck, videoId: videoId, title: title }));
+      }
+    }
+
+    function promptYouTube(deck) {
+      const url = prompt(`Pega el enlace de YouTube para el DECK ${deck}:`);
+      if (url) {
+        const id = extractYouTubeId(url);
+        if (id) {
+          loadYouTubeToDeck(deck, id, "YouTube Track (" + id + ")");
+        } else {
+          alert("Enlace de YouTube inválido.");
+        }
+      }
+    }
+
+    function loadLocalTrack(deck, input) {
       if (input.files && input.files[0]) {
-        const fileName = input.files[0].name;
-        document.getElementById(`title-${deck.toLowerCase()}`).innerText = fileName;
+        const file = input.files[0];
+        const fileURL = URL.createObjectURL(file);
+        const deckLower = deck.toLowerCase();
+        
+        document.getElementById(`title-${deckLower}`).innerText = file.name;
+        const previewContainer = document.getElementById(`preview-${deckLower}`);
+        
+        previewContainer.innerHTML = `<video src="${fileURL}" controls autoplay></video>`;
+
+        if(ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'load_local', deck: deck, title: file.name }));
+        }
       }
     }
 
     function playDeck(deck) {
       const title = document.getElementById(`title-${deck.toLowerCase()}`).innerText;
-      ws.send(JSON.stringify({ type: 'play', deck: deck, title: title }));
+      if(ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'play', deck: deck, title: title }));
+      }
+    }
+
+    function buscarYouTube() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      const trackList = document.getElementById('track-list');
+      trackList.innerHTML = '<tr><td colspan="4" style="text-align:center;">Cargando resultados...</td></tr>';
+
+      // Abre la búsqueda directa en una ventana emergente/pestana o simula la lista rápida
+      window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, '_blank');
+
+      // Agregamos un acceso rápido a la tabla para pegar la URL encontrada
+      trackList.innerHTML = `
+        <tr>
+          <td><img src="https://img.youtube.com/vi/dQw4w9WgXcQ/default.jpg" width="60"></td>
+          <td><b>Búsqueda lanzada en YouTube para: "${query}"</b><br><small>Copia el enlace del video que te guste e insértalo directamente.</small></td>
+          <td><button class="btn btn-deck-a" onclick="promptYouTube('A')">Cargar en A</button></td>
+          <td><button class="btn btn-deck-b" onclick="promptYouTube('B')">Cargar en B</button></td>
+        </tr>
+      `;
     }
   </script>
 </body>
 </html>
 EOF
-git add public/index.html && git commit -m "Interfaz estilo Mixxx agregada" && git push origin main
+git add public/index.html && git commit -m "Reparado buscador de YouTube y carga para Deck A y Deck B" && git push origin main
