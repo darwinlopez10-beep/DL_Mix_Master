@@ -1,3 +1,4 @@
+cat << 'EOF' > public/index.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -70,15 +71,17 @@
 
     .transport-row { display: flex; gap: 4px; }
     .t-btn { flex: 1; padding: 8px 0; font-size: 11px; font-weight: 900; border-radius: 4px; cursor: pointer; border: none; text-align: center; }
-    .t-btn.play { background: var(--green-accent); color: #000; }
-    .t-btn.cue { background: var(--orange-accent); color: #000; }
+    .t-btn.play { background: #333; color: #fff; }
+    .t-btn.play.active { background: var(--green-accent); color: #000; }
+    .t-btn.cue { background: #333; color: #fff; }
+    .t-btn.cue.active { background: var(--orange-accent); color: #000; box-shadow: 0 0 10px var(--orange-accent); }
     .t-btn.sync { background: var(--cyan-accent); color: #000; }
 
     .mixer-panel {
       background: var(--panel-bg); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border-color);
     }
     .volume-faders-row {
-      display: flex; justify-around: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      display: flex; justify-content: space-around; background: #080a0e; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);
     }
     .fader-unit { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9px; font-weight: bold; color: var(--orange-accent); }
     .fader-unit input[type=range] { writing-mode: bt-lr; appearance: slider-vertical; width: 16px; height: 80px; cursor: pointer; accent-color: var(--orange-accent); }
@@ -143,7 +146,7 @@
         <span class="song-title-display" id="title-a">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport">
+      <div class="video-viewport" id="container-a">
         <div id="player-a"></div>
       </div>
 
@@ -173,8 +176,8 @@
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('A')">SYNC</button>
-        <button class="t-btn cue" onclick="controlDeck('A', 'cue')">CUE</button>
-        <button class="t-btn play" id="btn-play-a" onclick="controlDeck('A', 'toggle')">PLAY ▶</button>
+        <button class="t-btn cue active" id="btn-cue-a" onclick="pressCue('A')">CUE</button>
+        <button class="t-btn play" id="btn-play-a" onclick="pressPlay('A')">PLAY ▶</button>
       </div>
     </div>
 
@@ -213,7 +216,7 @@
         <span class="song-title-display" id="title-b">Esperando Pista...</span>
       </div>
 
-      <div class="video-viewport">
+      <div class="video-viewport" id="container-b">
         <div id="player-b"></div>
       </div>
 
@@ -243,8 +246,8 @@
 
       <div class="transport-row">
         <button class="t-btn sync" onclick="syncDecks('B')">SYNC</button>
-        <button class="t-btn cue" onclick="controlDeck('B', 'cue')">CUE</button>
-        <button class="t-btn play" id="btn-play-b" onclick="controlDeck('B', 'toggle')">PLAY ▶</button>
+        <button class="t-btn cue active" id="btn-cue-b" onclick="pressCue('B')">CUE</button>
+        <button class="t-btn play" id="btn-play-b" onclick="pressPlay('B')">PLAY ▶</button>
       </div>
     </div>
 
@@ -271,44 +274,13 @@
   </div>
 
   <script>
-    // Coloca tu API Key de Google Cloud si dispones de una.
-    const YOUTUBE_API_KEY = 'TU_CLAVE_API_AQUI';
-
     let playerA = null, playerB = null;
     let speedA = 1.0, speedB = 1.0;
     let songHistory = JSON.parse(localStorage.getItem('dl_history')) || [];
     let currentSongsList = [];
 
-    let isPlayingA = false;
-    let isPlayingB = false;
-
     function onYouTubeIframeAPIReady() {
-      playerA = new YT.Player('player-a', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 },
-        events: { 'onStateChange': (e) => handlePlayerStateChange('A', e) }
-      });
-      playerB = new YT.Player('player-b', {
-        height: '100%', width: '100%',
-        playerVars: { 'autoplay': 0, 'controls': 0, 'enablejsapi': 1, 'rel': 0 },
-        events: { 'onStateChange': (e) => handlePlayerStateChange('B', e) }
-      });
-
       setInterval(updateTimers, 500);
-    }
-
-    function handlePlayerStateChange(deck, event) {
-      const isAllowed = (deck === 'A') ? isPlayingA : isPlayingB;
-      const player = (deck === 'A') ? playerA : playerB;
-      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-
-      if (event.data === YT.PlayerState.PLAYING && !isAllowed) {
-        if (player && typeof player.pauseVideo === 'function') {
-          player.pauseVideo();
-          player.seekTo(0, true);
-        }
-        if (btn) btn.innerText = 'PLAY ▶';
-      }
     }
 
     function formatTime(sec) {
@@ -337,6 +309,78 @@
       } catch(e){}
     }
 
+    // CARGA ORIGINAL: Autoplay en 0, sin reproducir nada
+    function loadVideoDirect(deck, videoId, title) {
+      const isA = (deck === 'A');
+      const container = document.getElementById(isA ? 'container-a' : 'container-b');
+      const targetElemId = isA ? 'player-a' : 'player-b';
+
+      if (isA && playerA) { try { playerA.destroy(); } catch(e){} playerA = null; }
+      if (!isA && playerB) { try { playerB.destroy(); } catch(e){} playerB = null; }
+
+      container.innerHTML = `<div id="${targetElemId}"></div>`;
+
+      // CONFIGURACIÓN ORIGINAL ESTRICTA (autoplay: 0)
+      const newPlayer = new YT.Player(targetElemId, {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          'autoplay': 0,
+          'controls': 0,
+          'rel': 0,
+          'enablejsapi': 1
+        },
+        events: {
+          'onReady': (e) => {
+            e.target.seekTo(0, true);
+            e.target.pauseVideo();
+            const currentVol = parseInt(document.getElementById(isA ? 'vol-a' : 'vol-b').value);
+            e.target.setVolume(currentVol);
+            setTransportState(deck, 'cue');
+          }
+        }
+      });
+
+      if (isA) playerA = newPlayer;
+      else playerB = newPlayer;
+
+      document.getElementById(isA ? 'title-a' : 'title-b').innerText = title;
+      saveToHistory(title, videoId);
+    }
+
+    // BOTÓN PLAY: Único encargado de iniciar la canción
+    function pressPlay(deck) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (!p || typeof p.playVideo !== 'function') return;
+
+      p.playVideo();
+      setTransportState(deck, 'play');
+    }
+
+    // BOTÓN CUE: Detiene y congela en el segundo 0
+    function pressCue(deck) {
+      const p = (deck === 'A') ? playerA : playerB;
+      if (!p || typeof p.pauseVideo !== 'function') return;
+
+      p.pauseVideo();
+      p.seekTo(0, true);
+      setTransportState(deck, 'cue');
+    }
+
+    function setTransportState(deck, activeState) {
+      const btnPlay = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
+      const btnCue = document.getElementById(deck === 'A' ? 'btn-cue-a' : 'btn-cue-b');
+
+      if (activeState === 'play') {
+        btnPlay.classList.add('active');
+        btnCue.classList.remove('active');
+      } else {
+        btnCue.classList.add('active');
+        btnPlay.classList.remove('active');
+      }
+    }
+
     function changeSpeed(deck, delta) {
       if (deck === 'A') {
         speedA = Math.min(Math.max(0.5, speedA + delta), 2.0);
@@ -346,61 +390,6 @@
         speedB = Math.min(Math.max(0.5, speedB + delta), 2.0);
         if (playerB && playerB.setPlaybackRate) playerB.setPlaybackRate(speedB);
         document.getElementById('speed-label-b').innerText = speedB.toFixed(2) + 'x';
-      }
-    }
-
-    function loadVideoDirect(deck, videoId, title) {
-      const targetPlayer = (deck === 'A') ? playerA : playerB;
-      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-
-      if (deck === 'A') isPlayingA = false;
-      if (deck === 'B') isPlayingB = false;
-
-      if (targetPlayer && typeof targetPlayer.cueVideoById === 'function') {
-        targetPlayer.cueVideoById(videoId);
-        document.getElementById(deck === 'A' ? 'title-a' : 'title-b').innerText = title;
-        if (btn) btn.innerText = 'PLAY ▶';
-
-        let checkCount = 0;
-        const intervalGuard = setInterval(() => {
-          checkCount++;
-          if (typeof targetPlayer.getPlayerState === 'function') {
-            const state = targetPlayer.getPlayerState();
-            if (state === YT.PlayerState.PLAYING) {
-              targetPlayer.pauseVideo();
-              targetPlayer.seekTo(0, true);
-            }
-          }
-          if (checkCount >= 15) clearInterval(intervalGuard);
-        }, 100);
-      }
-      saveToHistory(title, videoId);
-    }
-
-    function controlDeck(deck, action) {
-      const p = (deck === 'A') ? playerA : playerB;
-      const btn = document.getElementById(deck === 'A' ? 'btn-play-a' : 'btn-play-b');
-      if (!p || typeof p.getPlayerState !== 'function') return;
-
-      if (action === 'toggle') {
-        const state = p.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          if (deck === 'A') isPlayingA = false;
-          if (deck === 'B') isPlayingB = false;
-          p.pauseVideo();
-          btn.innerText = 'PLAY ▶';
-        } else {
-          if (deck === 'A') isPlayingA = true;
-          if (deck === 'B') isPlayingB = true;
-          p.playVideo();
-          btn.innerText = 'PAUSE ❚❚';
-        }
-      } else if (action === 'cue') {
-        if (deck === 'A') isPlayingA = false;
-        if (deck === 'B') isPlayingB = false;
-        p.pauseVideo();
-        p.seekTo(0, true);
-        btn.innerText = 'PLAY ▶';
       }
     }
 
@@ -469,83 +458,31 @@
 
     async function doSearch() {
       const q = document.getElementById('searchInput').value;
-      if (!q.trim()) return;
-
+      if (!q) return;
       const list = document.getElementById('resultsList');
-      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas karaoke...</div>';
+      list.innerHTML = '<div style="text-align:center; color:var(--orange-accent); padding:30px; font-size:12px">🔍 Buscando pistas de Karaoke...</div>';
 
-      const query = encodeURIComponent(q + ' karaoke');
-
-      // 1. Google YouTube Data API v3 (Si la clave es válida)
-      if (YOUTUBE_API_KEY && YOUTUBE_API_KEY !== 'TU_CLAVE_API_AQUI') {
-        try {
-          const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${query}&type=video&key=${YOUTUBE_API_KEY}`;
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.items && data.items.length > 0) {
-              currentSongsList = data.items.map(item => ({
-                videoId: item.id.videoId,
-                title: item.snippet.title,
-                duration: ''
-              }));
-              renderResultsList();
-              return;
-            }
-          }
-        } catch (e) {
-          console.warn('API de Google no disponible, probando réplicas públicas...');
-        }
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        currentSongsList = await res.json();
+        renderResultsList();
+      } catch (e) {
+        list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:30px; font-size:12px">Error al buscar canciones. Reintenta.</div>';
       }
-
-      // 2. Rotación por servidores públicos de Invidious
-      const fallbackMirrors = [
-        `https://vid.puffyan.us/api/v1/search?q=${query}&type=video`,
-        `https://invidious.nerdvpn.de/api/v1/search?q=${query}&type=video`,
-        `https://inv.tux.pizza/api/v1/search?q=${query}&type=video`,
-        `https://yewtu.be/api/v1/search?q=${query}&type=video`
-      ];
-
-      for (const endpoint of fallbackMirrors) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s tiempo límite por servidor
-
-          const res = await fetch(endpoint, { signal: controller.signal });
-          clearTimeout(timeoutId);
-
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              currentSongsList = data.slice(0, 15).map(item => ({
-                videoId: item.videoId,
-                title: item.title,
-                duration: ''
-              }));
-              renderResultsList();
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn(`Falló ${endpoint}, probando el siguiente servidor...`);
-        }
-      }
-
-      list.innerHTML = '<div style="text-align:center; color:#ff1744; padding:20px; font-size:12px">⚠️ Servidores públicos no disponibles. Te recomendamos colocar tu YOUTUBE_API_KEY de Google Cloud en el código.</div>';
     }
 
     function renderResultsList() {
       const list = document.getElementById('resultsList');
       list.innerHTML = '';
       if (!currentSongsList || currentSongsList.length === 0) {
-        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">No se encontraron pistas. Intenta con otra búsqueda.</div>';
+        list.innerHTML = '<div style="text-align:center; color:var(--text-sub); padding:30px; font-size:12px">Ingresa el nombre del cantante o canción para buscar pistas.</div>';
         return;
       }
       currentSongsList.forEach((song, idx) => {
         const row = document.createElement('div');
         row.className = 'song-row';
         row.innerHTML = `
-          <span><strong>${song.title}</strong></span>
+          <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">(${song.duration || ''})</span></span>
           <div style="display:flex; gap:6px">
             <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('A', ${idx})">+ DECK A</button>
             <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="selectSong('B', ${idx})">+ DECK B</button>
@@ -579,12 +516,11 @@
       songHistory.forEach((song) => {
         const row = document.createElement('div');
         row.className = 'song-row';
-        const cleanTitle = song.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         row.innerHTML = `
           <span><strong>${song.title}</strong> <span style="color:var(--text-sub); margin-left:6px">[${song.date}]</span></span>
           <div style="display:flex; gap:6px">
-            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('A', '${song.videoId}', '${cleanTitle}')">+ DECK A</button>
-            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('B', '${song.videoId}', '${cleanTitle}')">+ DECK B</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--orange-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('A', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK A</button>
+            <button class="pad-btn" style="padding:5px 10px; background:var(--cyan-accent); color:#000; border:none; font-weight:bold" onclick="loadVideoDirect('B', '${song.videoId}', '${song.title.replace(/'/g, "")}')">+ DECK B</button>
           </div>
         `;
         list.appendChild(row);
@@ -603,3 +539,4 @@
   </script>
 </body>
 </html>
+EOF
