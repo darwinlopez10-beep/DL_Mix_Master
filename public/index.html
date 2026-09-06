@@ -1,272 +1,49 @@
-cd ~/Escritorio/DL_Mix_Master && cat << 'EOF' > public/index.html
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DL Mix-Master DJ Console</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
-    body { background-color: #12151a; color: #c3c7d1; font-size: 12px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    
-    header { background: #1c2029; border-bottom: 1px solid #2d3342; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center; }
-    .brand { font-weight: bold; color: #00e676; font-size: 14px; letter-spacing: 1px; }
-    .top-controls button { background: #2a303d; color: #fff; border: 1px solid #404b5c; padding: 4px 10px; cursor: pointer; border-radius: 3px; font-weight: bold; }
-    .top-controls button:hover { background: #00e676; color: #000; }
+cd ~/Escritorio/DL_Mix_Master && npm install yt-search && cat << 'EOF' > server.js
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
+const path = require('path');
+const ytSearch = require('yt-search');
 
-    .console-container { display: flex; flex: 1; padding: 8px; gap: 8px; background: #0b0d10; min-height: 350px; }
-    
-    .deck { flex: 1; background: #171a21; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; }
-    .deck-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a313d; padding-bottom: 6px; }
-    .deck-title { font-weight: bold; font-size: 14px; color: #00b0ff; }
-    .deck-b .deck-title { color: #ff3d00; }
-    
-    .screen-preview { width: 100%; height: 140px; background: #000; border: 1px solid #3a4454; margin: 8px 0; border-radius: 4px; overflow: hidden; position: relative; }
-    .screen-preview iframe, .screen-preview video { width: 100%; height: 100%; border: none; object-fit: contain; }
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-    .vol-control { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 4px 0; background: #1c2029; padding: 4px; border-radius: 4px; }
-    .vol-control span { font-weight: bold; font-size: 10px; color: #8a94a6; }
-    .vol-slider { width: 120px; accent-color: #00e676; }
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-    .deck-controls { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
-    .btn { background: #252b36; border: 1px solid #3d4657; color: #fff; padding: 6px 10px; font-weight: bold; border-radius: 3px; cursor: pointer; font-size: 11px; }
-    .btn:hover { background: #323b4a; }
-    .btn-play { background: #00c853; color: #000; }
-    .btn-cue { background: #ffab00; color: #000; }
+// Endpoint de búsqueda backend sin API Key ni bloqueos
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'Query vacía' });
 
-    .mixer { width: 200px; background: #14171d; border: 1px solid #2a313d; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-    .eq-group { display: flex; flex-direction: column; gap: 8px; width: 100%; align-items: center; }
-    .eq-knob { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
-    .eq-knob input { width: 80px; }
-    .crossfader { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-    .crossfader input { width: 80%; accent-color: #00e676; }
+  try {
+    const r = await ytSearch(query);
+    const videos = r.videos.slice(0, 15).map(v => ({
+      videoId: v.videoId,
+      title: v.title,
+      thumbnail: v.thumbnail,
+      author: v.author.name,
+      timestamp: v.timestamp
+    }));
+    res.json(videos);
+  } catch (err) {
+    res.status(500).json({ error: 'Error realizando búsqueda' });
+  }
+});
 
-    .library-container { flex: 1; background: #12151a; border-top: 2px solid #2a313d; display: flex; height: 100%; overflow: hidden; }
-    .sidebar { width: 180px; background: #171a21; border-right: 1px solid #2a313d; padding: 8px; }
-    .sidebar-item { padding: 6px 8px; border-radius: 3px; cursor: pointer; margin-bottom: 2px; }
-    .sidebar-item:hover, .sidebar-item.active { background: #00b0ff; color: #fff; }
-    
-    .main-library { flex: 1; display: flex; flex-direction: column; padding: 8px; overflow-y: auto; }
-    .search-bar { display: flex; gap: 6px; margin-bottom: 8px; }
-    .search-bar input { flex: 1; padding: 6px; background: #1c2029; border: 1px solid #2a313d; color: #fff; border-radius: 3px; }
-    
-    .track-table { width: 100%; border-collapse: collapse; text-align: left; }
-    .track-table th { background: #1c2029; padding: 6px; border-bottom: 1px solid #2a313d; color: #8a94a6; position: sticky; top: 0; }
-    .track-table td { padding: 6px; border-bottom: 1px solid #1c2029; vertical-align: middle; }
-    .track-table tr:hover { background: #252b36; }
-    
-    .btn-deck-a { background: #00b0ff; color: #000; padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; }
-    .btn-deck-b { background: #ff3d00; color: #fff; padding: 4px 8px; font-size: 10px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; }
-    .btn-deck-a:hover { background: #40c4ff; }
-    .btn-deck-b:hover { background: #ff6e40; }
-  </style>
-</head>
-<body>
-
-  <header>
-    <div class="brand">DL MIX-MASTER PRO</div>
-    <div class="top-controls">
-      <button onclick="window.open('/tv.html', '_blank')">Abrir Pantalla TV</button>
-    </div>
-  </header>
-
-  <div class="console-container">
-    <!-- DECK A -->
-    <div class="deck deck-a">
-      <div class="deck-header">
-        <span class="deck-title">DECK A</span>
-        <span id="title-a" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ninguna pista</span>
-      </div>
-      
-      <div class="screen-preview" id="preview-a">
-        <div style="display:flex; justify-content:center; align-items:center; height:100%; color:#555;">DECK A VIDEO</div>
-      </div>
-      
-      <div class="vol-control">
-        <span>VOL A</span>
-        <input type="range" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('A', this.value)">
-      </div>
-
-      <input type="file" id="file-a" accept="audio/*,video/*" style="display:none;" onchange="loadLocalTrack('A', this)">
-      
-      <div class="deck-controls">
-        <button class="btn" onclick="document.getElementById('file-a').click()">Local</button>
-        <button class="btn btn-cue">CUE</button>
-        <button class="btn btn-play" onclick="playDeck('A')">PLAY</button>
-      </div>
-    </div>
-
-    <!-- MIXER CENTRAL -->
-    <div class="mixer">
-      <div style="font-weight:bold; color:#8a94a6;">MEZCLADOR</div>
-      <div class="eq-group">
-        <div class="eq-knob"><label>HI</label><input type="range" min="0" max="100" value="50"></div>
-        <div class="eq-knob"><label>MID</label><input type="range" min="0" max="100" value="50"></div>
-        <div class="eq-knob"><label>LOW</label><input type="range" min="0" max="100" value="50"></div>
-      </div>
-      <div class="crossfader">
-        <label style="font-size: 10px; margin-bottom:2px;">CROSSFADER (A / B)</label>
-        <input type="range" id="crossfader" min="0" max="100" value="50">
-      </div>
-    </div>
-
-    <!-- DECK B -->
-    <div class="deck deck-b">
-      <div class="deck-header">
-        <span class="deck-title">DECK B</span>
-        <span id="title-b" style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ninguna pista</span>
-      </div>
-      
-      <div class="screen-preview" id="preview-b">
-        <div style="display:flex; justify-content:center; align-items:center; height:100%; color:#555;">DECK B VIDEO</div>
-      </div>
-
-      <div class="vol-control">
-        <span>VOL B</span>
-        <input type="range" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('B', this.value)">
-      </div>
-
-      <input type="file" id="file-b" accept="audio/*,video/*" style="display:none;" onchange="loadLocalTrack('B', this)">
-      
-      <div class="deck-controls">
-        <button class="btn" onclick="document.getElementById('file-b').click()">Local</button>
-        <button class="btn btn-cue">CUE</button>
-        <button class="btn btn-play" onclick="playDeck('B')">PLAY</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- BIBLIOTECA -->
-  <div class="library-container">
-    <div class="sidebar">
-      <div class="sidebar-item active">🔍 Buscar Karaoke</div>
-    </div>
-    <div class="main-library">
-      <div class="search-bar">
-        <input type="text" id="searchInput" placeholder="Escribe el nombre (ej. Marc Anthony Aguanile Karaoke)..." onkeypress="if(event.key==='Enter') buscarYouTube()">
-        <button class="btn" style="background:#ff0000; color:#fff;" onclick="buscarYouTube()">Buscar</button>
-      </div>
-      <table class="track-table">
-        <thead>
-          <tr>
-            <th style="width: 90px;">Portada</th>
-            <th>Título</th>
-            <th style="width: 110px;">Cargar en A</th>
-            <th style="width: 110px;">Cargar en B</th>
-          </tr>
-        </thead>
-        <tbody id="track-list">
-          <tr>
-            <td colspan="4" style="text-align:center; color:#666;">Buscador listo. No requiere API Key.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <script>
-    const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
-
-    function changeVolume(deck, value) {
-      const previewContainer = document.getElementById(`preview-${deck.toLowerCase()}`);
-      const iframe = previewContainer.querySelector('iframe');
-      const video = previewContainer.querySelector('video');
-
-      if (iframe) {
-        iframe.contentWindow.postMessage(JSON.stringify({
-          event: 'command',
-          func: 'setVolume',
-          args: [parseInt(value)]
-        }), '*');
-      } else if (video) {
-        video.volume = value / 100;
+wss.on('connection', (ws) => {
+  ws.on('message', (message) => {
+    wss.clients.forEach((client) => {
+      if (client !== ws && client.readyState === WebSocket.OPEN) {
+        client.send(message.toString());
       }
-    }
+    });
+  });
+});
 
-    function loadYouTubeToDeck(deck, videoId, title) {
-      const deckLower = deck.toLowerCase();
-      document.getElementById(`title-${deckLower}`).innerText = title;
-      const previewContainer = document.getElementById(`preview-${deckLower}`);
-      
-      previewContainer.innerHTML = `
-        <iframe src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen></iframe>
-      `;
-
-      if(ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'load_youtube', deck: deck, videoId: videoId, title: title }));
-      }
-      
-      // Reiniciar el volumen de la interfaz a 100 al cargar nueva canción
-      const volSlider = document.querySelector(`.deck-${deckLower} .vol-slider`);
-      if(volSlider) volSlider.value = 100;
-    }
-
-    function loadLocalTrack(deck, input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const fileURL = URL.createObjectURL(file);
-        const deckLower = deck.toLowerCase();
-        
-        document.getElementById(`title-${deckLower}`).innerText = file.name;
-        const previewContainer = document.getElementById(`preview-${deckLower}`);
-        
-        previewContainer.innerHTML = `<video src="${fileURL}" controls autoplay></video>`;
-
-        if(ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'load_local', deck: deck, title: file.name }));
-        }
-      }
-    }
-
-    function playDeck(deck) {
-      const title = document.getElementById(`title-${deck.toLowerCase()}`).innerText;
-      if(ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'play', deck: deck, title: title }));
-      }
-    }
-
-    async function buscarYouTube() {
-      const query = document.getElementById('searchInput').value.trim();
-      const trackList = document.getElementById('track-list');
-      if (!query) return;
-
-      trackList.innerHTML = '<tr><td colspan="4" style="text-align:center;">Buscando temas...</td></tr>';
-
-      try {
-        // Usando un servidor libre (Piped) para evitar necesitar API Keys de Google
-        const response = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query)}&filter=all`);
-        const data = await response.json();
-
-        if (!data.items || data.items.length === 0) {
-          trackList.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ff3d00;">No se encontraron canciones.</td></tr>';
-          return;
-        }
-
-        trackList.innerHTML = '';
-        const items = data.items.filter(item => item.type === 'stream').slice(0, 15);
-
-        items.forEach(item => {
-          const videoId = item.url.replace('/watch?v=', '');
-          const cleanTitle = item.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-          
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td><img src="${item.thumbnail}" width="70" style="border-radius:3px;"></td>
-            <td><b>${item.title}</b><br><small style="color:#8a94a6;">${item.uploaderName}</small></td>
-            <td><button class="btn-deck-a" onclick="loadYouTubeToDeck('A', '${videoId}', '${cleanTitle}')">Cargar en A</button></td>
-            <td><button class="btn-deck-b" onclick="loadYouTubeToDeck('B', '${videoId}', '${cleanTitle}')">Cargar en B</button></td>
-          `;
-          trackList.appendChild(row);
-        });
-
-      } catch (error) {
-        trackList.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#ffab00;">Buscador libre saturado momentáneamente. Presiona Buscar de nuevo.</td></tr>';
-      }
-    }
-  </script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});
 EOF
-git add public/index.html && git commit -m "Buscador integrado sin API Key y controles de volumen por Deck" && git push origin main
