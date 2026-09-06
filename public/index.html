@@ -17,7 +17,7 @@
     .deck-title { font-weight: bold; color: #00e676; }
 
     .media-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; position: relative; }
-    video, iframe { width: 100%; height: 100%; border: none; }
+    video, iframe { width: 100%; height: 100%; border: none; display: block; }
 
     .controls-grid { display: flex; flex-direction: column; gap: 10px; }
     .input-row { display: flex; gap: 6px; }
@@ -39,7 +39,7 @@
     .slider-group { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #a0a0b0; }
     .slider-group input[type="range"] { flex: 1; accent-color: #00e676; }
 
-    /* Mixer Central (Crossfader) */
+    /* Crossfader Central */
     .mixer-panel { background: #18181c; border: 1px solid #292932; border-radius: 8px; padding: 15px; text-align: center; max-width: 600px; margin: 0 auto; }
     .mixer-panel h3 { font-size: 0.9rem; color: #888; margin-bottom: 10px; text-transform: uppercase; }
     .crossfader-container { display: flex; align-items: center; gap: 15px; }
@@ -52,6 +52,7 @@
   <h1>Control Dual de Video</h1>
 
   <div class="decks-container">
+    <!-- DECK 1 -->
     <div class="deck" id="deck-1">
       <div class="deck-header">
         <span class="deck-title">DECK 1</span>
@@ -61,9 +62,8 @@
         </label>
       </div>
 
-      <div class="media-container">
-        <div id="yt-player-1"></div>
-        <video id="local-player-1" style="display:none;"></video>
+      <div class="media-container" id="media-box-1">
+        <!-- El reproductor se inserta dinámicamente aquí -->
       </div>
 
       <div class="controls-grid">
@@ -84,6 +84,7 @@
       </div>
     </div>
 
+    <!-- DECK 2 -->
     <div class="deck" id="deck-2">
       <div class="deck-header">
         <span class="deck-title">DECK 2</span>
@@ -93,9 +94,8 @@
         </label>
       </div>
 
-      <div class="media-container">
-        <div id="yt-player-2"></div>
-        <video id="local-player-2" style="display:none;"></video>
+      <div class="media-container" id="media-box-2">
+        <!-- El reproductor se inserta dinámicamente aquí -->
       </div>
 
       <div class="controls-grid">
@@ -117,6 +117,7 @@
     </div>
   </div>
 
+  <!-- CROSSFADER -->
   <div class="mixer-panel">
     <h3>Crossfader (Crossover)</h3>
     <div class="crossfader-container">
@@ -127,7 +128,7 @@
   </div>
 
   <script>
-    // Carga API de YouTube
+    // Carga dinámica de la API de YouTube
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -135,7 +136,6 @@
 
     var players = { 1: null, 2: null };
     var activeSource = { 1: null, 2: null };
-    var cuePoints = { 1: 0, 2: 0 };
 
     function onYouTubeIframeAPIReady() {}
 
@@ -145,51 +145,67 @@
       return (match && match[2].length === 11) ? match[2] : url;
     }
 
+    function resetMediaBox(deck) {
+      if (players[deck] && typeof players[deck].destroy === 'function') {
+        players[deck].destroy();
+        players[deck] = null;
+      }
+      var box = document.getElementById('media-box-' + deck);
+      box.innerHTML = ''; 
+    }
+
     function loadYouTube(deck) {
       var deckEl = document.getElementById('deck-' + deck);
       var inputVal = deckEl.querySelector('.yt-input').value.trim();
       if (!inputVal) return;
 
       var videoId = extractVideoID(inputVal);
-      var localPlayer = document.getElementById('local-player-' + deck);
-      
-      localPlayer.pause();
-      localPlayer.style.display = 'none';
+      resetMediaBox(deck);
 
-      var ytContainer = document.getElementById('yt-player-' + deck);
-      ytContainer.style.display = 'block';
+      var box = document.getElementById('media-box-' + deck);
+      var ytDiv = document.createElement('div');
+      ytDiv.id = 'yt-target-' + deck;
+      box.appendChild(ytDiv);
 
-      if (players[deck]) {
-        players[deck].loadVideoById(videoId);
-      } else {
-        players[deck] = new YT.Player('yt-player-' + deck, {
-          videoId: videoId,
-          playerVars: { 'autoplay': 0, 'controls': 0 }
-        });
-      }
+      players[deck] = new YT.Player('yt-target-' + deck, {
+        videoId: videoId,
+        playerVars: { 
+          'autoplay': 1, 
+          'controls': 1,
+          'rel': 0,
+          'modestbranding': 1
+        },
+        events: {
+          'onReady': function() {
+            updateMixer();
+          }
+        }
+      });
+
       activeSource[deck] = 'yt';
-      cuePoints[deck] = 0;
     }
 
     function loadLocalVideo(event, deck) {
       var file = event.target.files[0];
       if (!file) return;
 
-      if (players[deck] && typeof players[deck].stopVideo === 'function') {
-        players[deck].stopVideo();
-      }
-      document.getElementById('yt-player-' + deck).style.display = 'none';
+      resetMediaBox(deck);
 
-      var localPlayer = document.getElementById('local-player-' + deck);
-      localPlayer.src = URL.createObjectURL(file);
-      localPlayer.style.display = 'block';
+      var box = document.getElementById('media-box-' + deck);
+      var videoEl = document.createElement('video');
+      videoEl.id = 'local-player-' + deck;
+      videoEl.controls = true;
+      videoEl.src = URL.createObjectURL(file);
+      
+      box.appendChild(videoEl);
       activeSource[deck] = 'local';
-      cuePoints[deck] = 0;
+      
+      videoEl.play();
       updateMixer();
     }
 
     function playPause(deck) {
-      if (activeSource[deck] === 'yt' && players[deck]) {
+      if (activeSource[deck] === 'yt' && players[deck] && players[deck].getPlayerState) {
         var state = players[deck].getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
           players[deck].pauseVideo();
@@ -197,23 +213,27 @@
           players[deck].playVideo();
         }
       } else if (activeSource[deck] === 'local') {
-        var localPlayer = document.getElementById('local-player-' + deck);
-        if (localPlayer.paused) {
-          localPlayer.play();
-        } else {
-          localPlayer.pause();
+        var videoEl = document.getElementById('local-player-' + deck);
+        if (videoEl) {
+          if (videoEl.paused) {
+            videoEl.play();
+          } else {
+            videoEl.pause();
+          }
         }
       }
     }
 
     function cue(deck) {
-      if (activeSource[deck] === 'yt' && players[deck]) {
+      if (activeSource[deck] === 'yt' && players[deck] && players[deck].seekTo) {
         players[deck].pauseVideo();
-        players[deck].seekTo(cuePoints[deck]);
+        players[deck].seekTo(0);
       } else if (activeSource[deck] === 'local') {
-        var localPlayer = document.getElementById('local-player-' + deck);
-        localPlayer.pause();
-        localPlayer.currentTime = cuePoints[deck];
+        var videoEl = document.getElementById('local-player-' + deck);
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.currentTime = 0;
+        }
       }
     }
 
@@ -222,22 +242,23 @@
       var v2 = document.getElementById('vol-2').value / 100;
       var xf = document.getElementById('crossfader').value / 100;
 
-      // Cálculo del crossfader
       var gain1 = v1 * Math.cos(xf * (Math.PI / 2));
       var gain2 = v2 * Math.sin(xf * (Math.PI / 2));
 
-      // Aplicar volumen Deck 1
+      // Deck 1
       if (activeSource[1] === 'yt' && players[1] && players[1].setVolume) {
         players[1].setVolume(gain1 * 100);
       } else if (activeSource[1] === 'local') {
-        document.getElementById('local-player-1').volume = gain1;
+        var v1El = document.getElementById('local-player-1');
+        if (v1El) v1El.volume = gain1;
       }
 
-      // Aplicar volumen Deck 2
+      // Deck 2
       if (activeSource[2] === 'yt' && players[2] && players[2].setVolume) {
         players[2].setVolume(gain2 * 100);
       } else if (activeSource[2] === 'local') {
-        document.getElementById('local-player-2').volume = gain2;
+        var v2El = document.getElementById('local-player-2');
+        if (v2El) v2El.volume = gain2;
       }
     }
   </script>
