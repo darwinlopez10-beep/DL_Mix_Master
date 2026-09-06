@@ -1,49 +1,397 @@
-cd ~/Escritorio/DL_Mix_Master && npm install yt-search && cat << 'EOF' > server.js
-const express = require('express');
-const http = require('http');
-const WebSocket = require('ws');
-const path = require('path');
-const ytSearch = require('yt-search');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Double D Karaoke Mixer v2</title>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#151923; --panel2:#1f2532; --text:#f7f8fb;
+  --muted:#9aa4b3; --border:#303747; --a:#7d70ff; --b:#ff4f8a;
+  --good:#33d17a; --bad:#ff6b6b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; color:var(--text);
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:
+    radial-gradient(circle at 10% 0, rgba(125,112,255,.17), transparent 28%),
+    radial-gradient(circle at 90% 0, rgba(255,79,138,.15), transparent 28%),
+    var(--bg);
+}
+header{
+  position:sticky; top:0; z-index:20;
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:16px 20px; background:rgba(11,14,19,.9); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border)
+}
+h1{margin:0;font-size:21px}.brand{color:#ff4f8a}.sub{color:var(--muted);font-size:12px}
+#status{padding:8px 12px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:13px}
+main{max-width:1500px;margin:auto;padding:18px}
+.toolbar{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:15px}
+input,button{
+  color:var(--text); background:#10141c; border:1px solid var(--border);
+  border-radius:11px; padding:11px 12px; font-size:14px
+}
+button{cursor:pointer;font-weight:750}
+button:hover{border-color:#657189}
+.primary{background:linear-gradient(135deg,var(--a),var(--b));border:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.deck,.panel,.mixer{
+  background:linear-gradient(180deg,var(--panel),#11151d);
+  border:1px solid var(--border); border-radius:18px; padding:15px;
+  box-shadow:0 18px 45px rgba(0,0,0,.25)
+}
+.deck h2{margin:0 0 10px}.deckA h2{color:#a99fff}.deckB h2{color:#ff91b5}
+.screen{
+  aspect-ratio:16/9; background:#05070a; border-radius:14px; overflow:hidden;
+  border:1px solid #262c38; display:flex;align-items:center;justify-content:center;
+  color:#687283
+}
+.screen video,.screen audio,.ytplayer{width:100%;height:100%;background:#000}
+.now{padding:10px 0;min-height:50px}.now strong{display:block}.now span{color:var(--muted);font-size:12px}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slider{display:grid;grid-template-columns:80px 1fr 48px;gap:8px;align-items:center;margin-top:10px;color:var(--muted);font-size:13px}
+input[type=range]{padding:0}
+.mixer{grid-column:1/-1;margin-top:15px}
+.cross{display:grid;grid-template-columns:70px 1fr 70px;gap:10px;align-items:center}
+.cross .la{text-align:right;color:#a99fff;font-weight:800}.cross .lb{color:#ff91b5;font-weight:800}
+.library{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}
+.panel h3{margin-top:0}
+.hint{color:var(--muted);font-size:13px;line-height:1.45}
+.list{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow:auto}
+.item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:9px;border:1px solid #2b3240;border-radius:12px;background:#0f131a}
+.item.yt{grid-template-columns:110px 1fr auto auto}
+.item img{width:110px;height:62px;object-fit:cover;border-radius:9px}
+.meta{min-width:0}.meta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.meta span{color:var(--muted);font-size:12px}
+.apibox{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
+.note{padding:10px 12px;border-radius:12px;background:#101722;border:1px solid #253246;color:#b9c3d1;font-size:13px}
+@media(max-width:900px){.grid,.library,.toolbar{grid-template-columns:1fr}.mixer{grid-column:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1><span class="brand">Double D</span> Karaoke Mixer v2</h1>
+    <div class="sub">Deck A + Deck B • Crossfader • Local + YouTube</div>
+  </div>
+  <div id="status">Inicializando YouTube…</div>
+</header>
 
-const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+<main>
+  <div class="note">
+    Si un video de YouTube dice que no se puede reproducir, normalmente es porque el propietario bloqueó la reproducción embebida.
+    Prueba otro resultado de karaoke del mismo tema.
+  </div>
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+  <section class="toolbar" style="margin-top:12px">
+    <input id="localSearch" placeholder="Buscar canción local..." />
+    <input id="youtubeQuery" placeholder="Buscar canción o artista en YouTube..." />
+    <button id="youtubeSearchBtn" class="primary">Buscar karaoke</button>
+  </section>
 
-// Endpoint de búsqueda backend sin API Key ni bloqueos
-app.get('/api/search', async (req, res) => {
-  const query = req.query.q;
-  if (!query) return res.status(400).json({ error: 'Query vacía' });
+  <section class="grid">
+    <div class="deck deckA">
+      <h2>Deck A</h2>
+      <div class="screen" id="screenA">Carga un video o canción</div>
+      <div class="now"><strong id="titleA">Sin canción</strong><span id="sourceA">—</span></div>
+      <div class="controls">
+        <button onclick="togglePlay('A')">▶ / ❚❚</button>
+        <button onclick="restartDeck('A')">↺ Inicio</button>
+        <button onclick="seekDeck('A',-10)">-10s</button>
+        <button onclick="seekDeck('A',10)">+10s</button>
+      </div>
+      <div class="slider">
+        <span>Volumen</span>
+        <input id="volA" type="range" min="0" max="100" step="1" value="100">
+        <span id="volATxt">100%</span>
+      </div>
+    </div>
 
-  try {
-    const r = await ytSearch(query);
-    const videos = r.videos.slice(0, 15).map(v => ({
-      videoId: v.videoId,
-      title: v.title,
-      thumbnail: v.thumbnail,
-      author: v.author.name,
-      timestamp: v.timestamp
-    }));
-    res.json(videos);
-  } catch (err) {
-    res.status(500).json({ error: 'Error realizando búsqueda' });
-  }
-});
+    <div class="deck deckB">
+      <h2>Deck B</h2>
+      <div class="screen" id="screenB">Carga un video o canción</div>
+      <div class="now"><strong id="titleB">Sin canción</strong><span id="sourceB">—</span></div>
+      <div class="controls">
+        <button onclick="togglePlay('B')">▶ / ❚❚</button>
+        <button onclick="restartDeck('B')">↺ Inicio</button>
+        <button onclick="seekDeck('B',-10)">-10s</button>
+        <button onclick="seekDeck('B',10)">+10s</button>
+      </div>
+      <div class="slider">
+        <span>Volumen</span>
+        <input id="volB" type="range" min="0" max="100" step="1" value="100">
+        <span id="volBTxt">100%</span>
+      </div>
+    </div>
 
-wss.on('connection', (ws) => {
-  ws.on('message', (message) => {
-    wss.clients.forEach((client) => {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message.toString());
-      }
-    });
+    <div class="mixer">
+      <h3 style="margin-top:0">Crossfader</h3>
+      <div class="cross">
+        <div class="la">DECK A</div>
+        <input id="crossfader" type="range" min="-1" max="1" step="0.01" value="0">
+        <div class="lb">DECK B</div>
+      </div>
+      <div class="hint">Izquierda = A • Centro = ambos • Derecha = B</div>
+    </div>
+  </section>
+
+  <section class="library">
+    <div class="panel">
+      <h3>Biblioteca local</h3>
+      <p class="hint">Selecciona MP3, WAV, M4A, MP4 o WebM.</p>
+      <input id="filePicker" type="file" accept="audio/*,video/*" multiple />
+      <div id="localList" class="list" style="margin-top:10px"></div>
+    </div>
+
+    <div class="panel">
+      <h3>YouTube Karaoke</h3>
+      <div class="apibox">
+        <input id="youtubeApiKey" type="password" placeholder="YouTube Data API v3 key">
+        <button id="saveKeyBtn">Guardar</button>
+      </div>
+      <p class="hint">La búsqueda agrega automáticamente la palabra “karaoke”.</p>
+      <div id="youtubeResults" class="list"></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+let ytReady = false;
+window.onYouTubeIframeAPIReady = function(){
+  ytReady = true;
+  setStatus('YouTube listo');
+};
+
+const decks = {
+  A:{type:null,media:null,player:null,objectUrl:null},
+  B:{type:null,media:null,player:null,objectUrl:null}
+};
+let localFiles=[];
+
+function setStatus(t){ document.getElementById('status').textContent=t; }
+function el(id){ return document.getElementById(id); }
+function screen(deck){ return el('screen'+deck); }
+function setInfo(deck,title,source){ el('title'+deck).textContent=title; el('source'+deck).textContent=source; }
+
+function cleanupDeck(deck){
+  const d=decks[deck];
+  if(d.media){ try{d.media.pause()}catch(e){} }
+  if(d.player){ try{d.player.destroy()}catch(e){} }
+  if(d.objectUrl){ try{URL.revokeObjectURL(d.objectUrl)}catch(e){} }
+  decks[deck]={type:null,media:null,player:null,objectUrl:null};
+  screen(deck).innerHTML='Carga un video o canción';
+}
+
+function gains(){
+  const x=parseFloat(el('crossfader').value);
+  return {
+    A:Math.cos((x+1)*Math.PI/4),
+    B:Math.sin((x+1)*Math.PI/4)
+  };
+}
+
+function applyVolumes(){
+  const g=gains();
+  ['A','B'].forEach(deck=>{
+    const base=parseInt(el('vol'+deck).value,10)/100;
+    const finalVol=Math.max(0,Math.min(1,base*g[deck]));
+    el('vol'+deck+'Txt').textContent=Math.round(base*100)+'%';
+
+    if(decks[deck].type==='local' && decks[deck].media){
+      decks[deck].media.volume=finalVol;
+    }
+    if(decks[deck].type==='youtube' && decks[deck].player && decks[deck].player.setVolume){
+      try{ decks[deck].player.setVolume(Math.round(finalVol*100)); }catch(e){}
+    }
   });
-});
+}
+el('crossfader').addEventListener('input',applyVolumes);
+el('volA').addEventListener('input',applyVolumes);
+el('volB').addEventListener('input',applyVolumes);
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+el('filePicker').addEventListener('change',e=>{
+  localFiles=[...e.target.files].map((file,i)=>({id:i,file,name:file.name,type:file.type||''}));
+  renderLocalFiles();
+  setStatus(localFiles.length+' archivo(s) local(es) cargado(s)');
 });
-EOF
+el('localSearch').addEventListener('input',renderLocalFiles);
+
+function renderLocalFiles(){
+  const q=el('localSearch').value.toLowerCase().trim();
+  const list=el('localList'); list.innerHTML='';
+  const arr=localFiles.filter(x=>x.name.toLowerCase().includes(q));
+  if(!arr.length){ list.innerHTML='<div class="hint">No hay resultados.</div>'; return; }
+  arr.forEach(item=>{
+    const row=document.createElement('div'); row.className='item';
+    row.innerHTML=`
+      <div class="meta"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.type||'multimedia')}</span></div>
+      <button>Cargar A</button><button>Cargar B</button>`;
+    row.children[1].onclick=()=>loadLocal('A',item);
+    row.children[2].onclick=()=>loadLocal('B',item);
+    list.appendChild(row);
+  });
+}
+
+function loadLocal(deck,item){
+  cleanupDeck(deck);
+  const url=URL.createObjectURL(item.file);
+  const isVideo=item.file.type.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(item.file.name);
+  const media=document.createElement(isVideo?'video':'audio');
+  media.src=url;
+  media.controls=true;
+  media.preload='metadata';
+  media.playsInline=true;
+  media.addEventListener('error',()=>{
+    setStatus('No se pudo reproducir. Puede ser un codec no compatible con el navegador.');
+  });
+
+  screen(deck).innerHTML='';
+  screen(deck).appendChild(media);
+  decks[deck]={type:'local',media,player:null,objectUrl:url};
+  setInfo(deck,item.name,'Archivo local');
+  applyVolumes();
+  setStatus(item.name+' cargado en Deck '+deck);
+}
+
+function loadYouTube(deck,videoId,title,channel){
+  if(!ytReady || !window.YT || !YT.Player){
+    setStatus('YouTube todavía no está listo. Intenta de nuevo.');
+    return;
+  }
+
+  cleanupDeck(deck);
+  const holder=document.createElement('div');
+  holder.id='yt-'+deck+'-'+Date.now();
+  holder.className='ytplayer';
+  screen(deck).innerHTML='';
+  screen(deck).appendChild(holder);
+
+  const player=new YT.Player(holder.id,{
+    videoId:videoId,
+    width:'100%',
+    height:'100%',
+    playerVars:{
+      playsinline:1,
+      rel:0,
+      controls:1,
+      modestbranding:1
+    },
+    events:{
+      onReady:function(){
+        decks[deck].player=player;
+        applyVolumes();
+        setStatus('YouTube cargado en Deck '+deck);
+      },
+      onError:function(e){
+        const messages={
+          2:'ID de video inválido.',
+          5:'El navegador no puede reproducir este video.',
+          100:'El video no está disponible.',
+          101:'El propietario bloqueó la reproducción fuera de YouTube.',
+          150:'El propietario bloqueó la reproducción embebida.'
+        };
+        setStatus(messages[e.data] || ('Error de YouTube: '+e.data));
+      }
+    }
+  });
+
+  decks[deck]={type:'youtube',media:null,player,objectUrl:null};
+  setInfo(deck,decodeHtml(title),'YouTube • '+decodeHtml(channel));
+}
+
+function togglePlay(deck){
+  const d=decks[deck];
+  if(d.type==='local' && d.media){
+    if(d.media.paused) d.media.play().catch(()=>setStatus('El navegador bloqueó la reproducción automática. Pulsa Play otra vez.'));
+    else d.media.pause();
+    return;
+  }
+  if(d.type==='youtube' && d.player && d.player.getPlayerState){
+    try{
+      const state=d.player.getPlayerState();
+      if(state===YT.PlayerState.PLAYING) d.player.pauseVideo();
+      else d.player.playVideo();
+    }catch(e){ setStatus('YouTube todavía se está cargando.'); }
+    return;
+  }
+  setStatus('Carga una canción primero.');
+}
+
+function restartDeck(deck){
+  const d=decks[deck];
+  if(d.type==='local' && d.media){ d.media.currentTime=0; d.media.play(); return; }
+  if(d.type==='youtube' && d.player){ try{d.player.seekTo(0,true);d.player.playVideo()}catch(e){} }
+}
+
+function seekDeck(deck,s){
+  const d=decks[deck];
+  if(d.type==='local' && d.media){
+    d.media.currentTime=Math.max(0,(d.media.currentTime||0)+s); return;
+  }
+  if(d.type==='youtube' && d.player){
+    try{ d.player.seekTo(Math.max(0,d.player.getCurrentTime()+s),true); }catch(e){}
+  }
+}
+
+const savedKey=localStorage.getItem('dd_youtube_api_key');
+if(savedKey) el('youtubeApiKey').value=savedKey;
+el('saveKeyBtn').onclick=()=>{
+  localStorage.setItem('dd_youtube_api_key',el('youtubeApiKey').value.trim());
+  setStatus('API key guardada en este navegador');
+};
+
+el('youtubeSearchBtn').onclick=searchYouTube;
+el('youtubeQuery').addEventListener('keydown',e=>{if(e.key==='Enter')searchYouTube()});
+
+async function searchYouTube(){
+  const query=el('youtubeQuery').value.trim();
+  const key=el('youtubeApiKey').value.trim();
+  if(!query){setStatus('Escribe una canción o artista.');return}
+  if(!key){setStatus('Agrega tu YouTube Data API v3 key.');return}
+
+  el('youtubeResults').innerHTML='<div class="hint">Buscando...</div>';
+  setStatus('Buscando karaoke en YouTube…');
+
+  try{
+    const q=encodeURIComponent(query+' karaoke');
+    const url=`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=12&q=${q}&key=${encodeURIComponent(key)}`;
+    const r=await fetch(url);
+    const data=await r.json();
+    if(!r.ok) throw new Error(data?.error?.message||'Error de YouTube API');
+
+    const items=data.items||[];
+    el('youtubeResults').innerHTML='';
+    if(!items.length){el('youtubeResults').innerHTML='<div class="hint">No se encontraron videos.</div>';return}
+
+    items.forEach(item=>{
+      const id=item.id.videoId;
+      const title=item.snippet.title;
+      const channel=item.snippet.channelTitle;
+      const thumb=item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '';
+      const row=document.createElement('div'); row.className='item yt';
+      row.innerHTML=`
+        <img src="${escapeHtml(thumb)}" alt="">
+        <div class="meta"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(channel)}</span></div>
+        <button>Cargar A</button><button>Cargar B</button>`;
+      row.children[2].onclick=()=>loadYouTube('A',id,title,channel);
+      row.children[3].onclick=()=>loadYouTube('B',id,title,channel);
+      el('youtubeResults').appendChild(row);
+    });
+    setStatus(items.length+' resultado(s) encontrados');
+  }catch(err){
+    el('youtubeResults').innerHTML='<div class="hint">Error: '+escapeHtml(err.message)+'</div>';
+    setStatus('Error al buscar en YouTube');
+  }
+}
+
+function escapeHtml(str=''){
+  return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+function decodeHtml(str=''){
+  const t=document.createElement('textarea');t.innerHTML=str;return t.value;
+}
+</script>
+</body>
+</html>
